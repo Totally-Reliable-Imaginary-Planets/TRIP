@@ -6,11 +6,17 @@ use common_game::protocols::messages::{
 };
 use std::sync::mpsc;
 
+/// The AI implementation for our planet
 pub struct AI;
 
 impl PlanetAI for AI {
+    /// Called when the planet starts. Does nothing.
     fn start(&mut self, _: &PlanetState) {}
+
+    /// Called when the planet stops. Does nothing.
     fn stop(&mut self, _: &PlanetState) {}
+
+    /// Handles a message from the orchestrator.
     fn handle_orchestrator_msg(
         &mut self,
         _: &mut PlanetState,
@@ -20,6 +26,8 @@ impl PlanetAI for AI {
     ) -> Option<PlanetToOrchestrator> {
         None
     }
+
+    /// Handles a message from an explorer.
     fn handle_explorer_msg(
         &mut self,
         _: &mut PlanetState,
@@ -29,6 +37,8 @@ impl PlanetAI for AI {
     ) -> Option<PlanetToExplorer> {
         None
     }
+
+    /// Handles an incoming asteroid event.
     fn handle_asteroid(
         &mut self,
         _: &mut PlanetState,
@@ -39,11 +49,26 @@ impl PlanetAI for AI {
     }
 }
 
+/// The wrapper for the planet.
+///
+/// Holds a single `Planet` instance and manages its behavior through associated methods.
+/// Used to encapsulate planet-specific logic and communication channels.
 pub struct TRIP {
     planet: Planet,
 }
 
 impl TRIP {
+    /// Creates a new TRIP instance with the given parameters and initialized planet.
+    ///
+    /// Attempts to receive initial messages from both the orchestrator and explorer channels
+    /// to verify connectivity. Initializes the internal `Planet` with the provided ID,
+    /// AI, resource rules, and communication channels.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if either the `orch_to_planet` or `expl_to_planet` channel is disconnected,
+    /// indicating that the corresponding sender has been dropped and communication cannot be established.
+    /// Specific error messages indicate which channel failed.
     pub fn new(
         id: u32,
         orch_to_planet: mpsc::Receiver<OrchestratorToPlanet>,
@@ -82,6 +107,11 @@ impl TRIP {
         Ok(Self { planet })
     }
 
+    /// Runs the planet's operations and returns an error if something goes wrong.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the planet fails to run due to internal malfunctions or external disruptions.
     pub fn run(&mut self) -> Result<(), String> {
         self.planet.run()
     }

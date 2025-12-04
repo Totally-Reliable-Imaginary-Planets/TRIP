@@ -6,7 +6,7 @@ use common_game::protocols::messages::{
 };
 
 /// The AI implementation for our planet
-pub struct AI {
+pub(crate) struct AI {
     is_stopped: bool,
 }
 

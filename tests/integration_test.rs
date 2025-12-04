@@ -238,7 +238,10 @@ fn test_planet_incoming_expl_resp() {
         .expect("Failed to send asteroid message");
 
     match harness.recv_pto_with_timeout() {
-        PlanetToOrchestrator::IncomingExplorerResponse { planet_id: 0, .. } => {}
+        PlanetToOrchestrator::IncomingExplorerResponse {
+            planet_id: 0,
+            res: Ok(()),
+        } => {}
         _other => panic!("Wrong response received"),
     }
 
@@ -257,7 +260,10 @@ fn test_planet_outgoing_expl_resp() {
         .expect("Failed to send asteroid message");
 
     match harness.recv_pto_with_timeout() {
-        PlanetToOrchestrator::OutgoingExplorerResponse { planet_id: 0, .. } => {}
+        PlanetToOrchestrator::OutgoingExplorerResponse {
+            planet_id: 0,
+            res: Ok(()),
+        } => {}
         _other => panic!("Wrong response received"),
     }
 

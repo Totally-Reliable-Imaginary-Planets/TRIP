@@ -94,6 +94,44 @@ fn test_planet_supported_resource_resp() {
 }
 
 #[test]
+fn test_planet_supported_combination_resp() {
+    let harness = common::TestHarness::setup();
+    harness.start();
+
+    harness
+        .expl_tx
+        .send(ExplorerToPlanet::SupportedCombinationRequest { explorer_id: 0 })
+        .expect("Failed to send asteroid message");
+
+    match harness.recv_pte_with_timeout() {
+        PlanetToExplorer::SupportedCombinationResponse { .. } => {}
+        _other => panic!("Wrong response received"),
+    }
+
+    let result = harness.stop_and_join();
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_planet_available_eng_cell_resp() {
+    let harness = common::TestHarness::setup();
+    harness.start();
+
+    harness
+        .expl_tx
+        .send(ExplorerToPlanet::AvailableEnergyCellRequest { explorer_id: 0 })
+        .expect("Failed to send asteroid message");
+
+    match harness.recv_pte_with_timeout() {
+        PlanetToExplorer::AvailableEnergyCellResponse { available_cells: 0 } => {}
+        _other => panic!("Wrong response received"),
+    }
+
+    let result = harness.stop_and_join();
+    assert!(result.is_ok());
+}
+
+#[test]
 fn test_planet_sunray_ack() {
     let harness = common::TestHarness::setup();
     harness.start();

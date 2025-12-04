@@ -53,12 +53,12 @@ impl PlanetAI for AI {
 ///
 /// Holds a single `Planet` instance and manages its behavior through associated methods.
 /// Used to encapsulate planet-specific logic and communication channels.
-pub struct TRIP {
+pub struct Trip {
     planet: Planet,
 }
 
-impl TRIP {
-    /// Creates a new TRIP instance with the given parameters and initialized planet.
+impl Trip {
+    /// Creates a new Trip instance with the given parameters and initialized planet.
     ///
     /// Attempts to receive initial messages from both the orchestrator and explorer channels
     /// to verify connectivity. Initializes the internal `Planet` with the provided ID,
@@ -75,7 +75,7 @@ impl TRIP {
         planet_to_orch: mpsc::Sender<PlanetToOrchestrator>,
         expl_to_planet: mpsc::Receiver<ExplorerToPlanet>,
         planet_to_expl: mpsc::Sender<PlanetToExplorer>,
-    ) -> Result<TRIP, String> {
+    ) -> Result<Self, String> {
         match orch_to_planet.try_recv() {
             Err(mpsc::TryRecvError::Disconnected) => {
                 return Err("OrchestratorToPlanet Channel is closed".to_string());
@@ -125,18 +125,18 @@ mod tests {
     use std::thread;
 
     #[test]
-    fn test_trip_creation() {
+    fn test_planet_creation() {
         let (_orch_tx, orch_rx) = mpsc::channel();
         let (planet_tx, _planet_rx) = mpsc::channel();
         let (_expl_tx, expl_rx) = mpsc::channel();
         let (planet_tx2, _planet_rx2) = mpsc::channel();
 
-        let trip = TRIP::new(0, orch_rx, planet_tx, expl_rx, planet_tx2);
+        let trip = Trip::new(0, orch_rx, planet_tx, expl_rx, planet_tx2);
         assert!(trip.is_ok());
     }
 
     #[test]
-    fn test_trip_new_with_closed_channels() {
+    fn test_planet_new_with_closed_channels() {
         let (orch_tx, orch_rx) = mpsc::channel();
         let (planet_tx, _planet_rx) = mpsc::channel();
         let (expl_tx, expl_rx) = mpsc::channel();
@@ -146,18 +146,18 @@ mod tests {
         drop(orch_tx);
         drop(expl_tx);
 
-        let result = TRIP::new(1, orch_rx, planet_tx, expl_rx, planet_tx2);
+        let result = Trip::new(1, orch_rx, planet_tx, expl_rx, planet_tx2);
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_trip_run() {
+    fn test_planet_run() {
         let (orch_tx, orch_rx) = mpsc::channel();
         let (planet_tx, _planet_rx) = mpsc::channel();
         let (expl_tx, expl_rx) = mpsc::channel();
         let (planet_tx2, _planet_rx2) = mpsc::channel();
 
-        let mut trip = TRIP::new(0, orch_rx, planet_tx, expl_rx, planet_tx2).unwrap();
+        let mut trip = Trip::new(0, orch_rx, planet_tx, expl_rx, planet_tx2).unwrap();
 
         let handle = thread::spawn(move || trip.run());
 
@@ -182,7 +182,7 @@ mod tests {
         let (_expl_tx, expl_rx) = mpsc::channel();
         let (planet_tx2, _planet_rx2) = mpsc::channel();
 
-        let mut trip = TRIP::new(1, orch_rx, planet_tx, expl_rx, planet_tx2).unwrap();
+        let mut trip = Trip::new(1, orch_rx, planet_tx, expl_rx, planet_tx2).unwrap();
 
         let handle = std::thread::spawn(move || {
             for _ in 0..100 {

@@ -48,7 +48,7 @@ impl PlanetAI for AI {
     /// * `self`: Mutable reference to the planet's controller or handler, which includes runtime state like `is_stopped`.
     /// * `state`: Mutable reference to the current `PlanetState`, providing access to data like energy cells, resources, etc.
     /// * `_`: Placeholder for `Generator` reference (not currently used in logic).
-    /// * `_`: Placeholder for `Combinator` reference (not currently used in logic).
+    /// * `comb`: reference for `Combinator`.
     /// * `msg`: The incoming message from the explorer, wrapped in the `ExplorerToPlanet` enum.
     ///
     /// # Returns
@@ -61,8 +61,12 @@ impl PlanetAI for AI {
     ///
     /// Currently supports:
     /// - `AvailableEnergyCellRequest`: Responds with the count of charged energy cells.
+    /// - `SupportedCombinationRequest`: Respond with the list of available comination recipes so
+    /// an empty hashset
+    /// - `CombineResourceRequest`: Responde with the complex rescourc this planet can generate so
+    /// `None`
     ///
-    /// Other message types (`SupportedResourceRequest`, `GenerateResourceRequest`, etc.) are not yet implemented
+    /// Other message types (`SupportedResourceRequest`, `GenerateResourceRequest`) are not yet implemented
     /// and will trigger a `todo!()` panic if received.
     ///
     /// # Panics
@@ -81,7 +85,7 @@ impl PlanetAI for AI {
         &mut self,
         state: &mut PlanetState,
         _: &Generator,
-        _: &Combinator,
+        comb: &Combinator,
         msg: ExplorerToPlanet,
     ) -> Option<PlanetToExplorer> {
         if self.is_stopped {
@@ -89,9 +93,17 @@ impl PlanetAI for AI {
         }
         match msg {
             ExplorerToPlanet::SupportedResourceRequest { .. }
-            | ExplorerToPlanet::SupportedCombinationRequest { .. }
-            | ExplorerToPlanet::GenerateResourceRequest { .. }
-            | ExplorerToPlanet::CombineResourceRequest { .. } => todo!(),
+            | ExplorerToPlanet::GenerateResourceRequest { .. } => todo!(),
+            ExplorerToPlanet::SupportedCombinationRequest { .. } => {
+                Some(PlanetToExplorer::SupportedCombinationResponse {
+                    combination_list: comb.all_available_recipes(),
+                })
+            }
+            ExplorerToPlanet::CombineResourceRequest { .. } => {
+                Some(PlanetToExplorer::CombineResourceResponse {
+                    complex_response: None,
+                })
+            }
             ExplorerToPlanet::AvailableEnergyCellRequest { .. } => {
                 let tmp = state.cells_iter().filter(|&cell| cell.is_charged()).count();
                 let count = tmp.try_into().unwrap_or_default();

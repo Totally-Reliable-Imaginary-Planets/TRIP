@@ -1,4 +1,6 @@
+use common_game::components::energy_cell::EnergyCell;
 use common_game::components::planet::{PlanetAI, PlanetState};
+use common_game::components::resource::BasicResourceType;
 use common_game::components::resource::{Combinator, Generator};
 use common_game::components::rocket::Rocket;
 use common_game::protocols::messages::{
@@ -62,9 +64,9 @@ impl PlanetAI for AI {
     /// Currently supports:
     /// - `AvailableEnergyCellRequest`: Responds with the count of charged energy cells.
     /// - `SupportedCombinationRequest`: Respond with the list of available comination recipes so
-    /// an empty hashset
+    ///   an empty hashset
     /// - `CombineResourceRequest`: Responde with the complex rescourc this planet can generate so
-    /// `None`
+    ///   `None`
     ///
     /// Other message types (`SupportedResourceRequest`, `GenerateResourceRequest`) are not yet implemented
     /// and will trigger a `todo!()` panic if received.
@@ -84,7 +86,7 @@ impl PlanetAI for AI {
     fn handle_explorer_msg(
         &mut self,
         state: &mut PlanetState,
-        _: &Generator,
+        generator: &Generator,
         comb: &Combinator,
         msg: ExplorerToPlanet,
     ) -> Option<PlanetToExplorer> {
@@ -92,8 +94,27 @@ impl PlanetAI for AI {
             return None;
         }
         match msg {
-            ExplorerToPlanet::SupportedResourceRequest { .. }
-            | ExplorerToPlanet::GenerateResourceRequest { .. } => todo!(),
+            ExplorerToPlanet::SupportedResourceRequest { explorer_id: _ } => {
+                Some(PlanetToExplorer::SupportedResourceResponse {
+                    resource_list: generator.all_available_recipes(),
+                })
+            }
+            ExplorerToPlanet::GenerateResourceRequest {
+                explorer_id: _,
+                resource: BasicResourceType::Oxygen,
+            } => state
+                .cells_iter()
+                .position(EnergyCell::is_charged)
+                .and_then(|index| generator.make_oxygen(state.cell_mut(index)).ok())
+                .map(|r| {
+                    println!("Resource generated");
+                    PlanetToExplorer::GenerateResourceResponse {
+                        resource: Some(common_game::components::resource::BasicResource::Oxygen(r)),
+                    }
+                }),
+            ExplorerToPlanet::GenerateResourceRequest { .. } => {
+                None
+            }
             ExplorerToPlanet::SupportedCombinationRequest { .. } => {
                 Some(PlanetToExplorer::SupportedCombinationResponse {
                     combination_list: comb.all_available_recipes(),

@@ -38,7 +38,45 @@ impl PlanetAI for AI {
         None
     }
 
-    /// Handles a message from an explorer.
+    /// Handles incoming messages from an `Explorer` agent and generates appropriate responses based on the planet's current state.
+    ///
+    /// This function processes various types of requests such as resource availability, combination support,
+    /// generation, and energy cell status. If the planet is stopped (shut down or inactive), no responses are sent.
+    ///
+    /// # Parameters
+    ///
+    /// * `self`: Mutable reference to the planet's controller or handler, which includes runtime state like `is_stopped`.
+    /// * `state`: Mutable reference to the current `PlanetState`, providing access to data like energy cells, resources, etc.
+    /// * `_`: Placeholder for `Generator` reference (not currently used in logic).
+    /// * `_`: Placeholder for `Combinator` reference (not currently used in logic).
+    /// * `msg`: The incoming message from the explorer, wrapped in the `ExplorerToPlanet` enum.
+    ///
+    /// # Returns
+    ///
+    /// Returns an `Option<PlanetToExplorer>`:
+    /// - `Some(response)` if a valid response can be generated.
+    /// - `None` if the planet is stopped or the message type is unsupported/not yet implemented.
+    ///
+    /// # Message Handling
+    ///
+    /// Currently supports:
+    /// - `AvailableEnergyCellRequest`: Responds with the count of charged energy cells.
+    ///
+    /// Other message types (`SupportedResourceRequest`, `GenerateResourceRequest`, etc.) are not yet implemented
+    /// and will trigger a `todo!()` panic if received.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a non-implemented message variant is received (due to `todo!()`). This should be replaced
+    /// with proper error handling or stub responses in production code.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// let msg = ExplorerToPlanet::AvailableEnergyCellRequest {};
+    /// let response = planet_handler.handle_explorer_msg(&mut state, &generator, &combinator, msg);
+    /// assert!(response.is_some());
+    /// ```
     fn handle_explorer_msg(
         &mut self,
         state: &mut PlanetState,

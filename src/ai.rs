@@ -41,7 +41,7 @@ impl PlanetAI for AI {
     /// Handles a message from an explorer.
     fn handle_explorer_msg(
         &mut self,
-        _: &mut PlanetState,
+        state: &mut PlanetState,
         _: &Generator,
         _: &Combinator,
         msg: ExplorerToPlanet,
@@ -53,8 +53,14 @@ impl PlanetAI for AI {
             ExplorerToPlanet::SupportedResourceRequest { .. }
             | ExplorerToPlanet::SupportedCombinationRequest { .. }
             | ExplorerToPlanet::GenerateResourceRequest { .. }
-            | ExplorerToPlanet::CombineResourceRequest { .. }
-            | ExplorerToPlanet::AvailableEnergyCellRequest { .. } => todo!(),
+            | ExplorerToPlanet::CombineResourceRequest { .. } => todo!(),
+            ExplorerToPlanet::AvailableEnergyCellRequest { .. } => {
+                let tmp = state.cells_iter().filter(|&cell| cell.is_charged()).count();
+                let count = tmp.try_into().unwrap_or_default();
+                Some(PlanetToExplorer::AvailableEnergyCellResponse {
+                    available_cells: count,
+                })
+            }
         }
     }
 

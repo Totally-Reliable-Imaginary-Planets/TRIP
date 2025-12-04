@@ -67,14 +67,14 @@ impl PlanetAI for AI {
     ///   an empty hashset
     /// - `CombineResourceRequest`: Responde with the complex rescourc this planet can generate so
     ///   `None`
-    ///
-    /// Other message types (`SupportedResourceRequest`, `GenerateResourceRequest`) are not yet implemented
-    /// and will trigger a `todo!()` panic if received.
+    /// - `SupportedResourceRequest`: Responds with the basic resource type hashset containing the
+    ///   only supported resource `Oxygen`
+    /// - `GenerateResourceRequest`: Responds only to request for the `Oxygen` resource althought
+    ///   return `None`
     ///
     /// # Panics
     ///
-    /// Panics if a non-implemented message variant is received (due to `todo!()`). This should be replaced
-    /// with proper error handling or stub responses in production code.
+    /// Panics if a non-implemented message variant is received.
     ///
     /// # Example
     ///
@@ -112,9 +112,7 @@ impl PlanetAI for AI {
                         resource: Some(common_game::components::resource::BasicResource::Oxygen(r)),
                     }
                 }),
-            ExplorerToPlanet::GenerateResourceRequest { .. } => {
-                None
-            }
+            ExplorerToPlanet::GenerateResourceRequest { .. } => None,
             ExplorerToPlanet::SupportedCombinationRequest { .. } => {
                 Some(PlanetToExplorer::SupportedCombinationResponse {
                     combination_list: comb.all_available_recipes(),

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["asteroid","energy_cell","generator","planet","resource","rocket","sunray"]};

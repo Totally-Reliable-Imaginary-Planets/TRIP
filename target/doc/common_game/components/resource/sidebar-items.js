@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["BasicResource","BasicResourceType","ComplexResource","ComplexResourceRequest","ComplexResourceType","GenericResource","ResourceType"],"struct":["AIPartner","Carbon","Combinator","Diamond","Dolphin","Generator","Hydrogen","Life","Oxygen","Robot","Silicon","Water"],"trait":["Resource"]};

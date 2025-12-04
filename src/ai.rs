@@ -81,7 +81,7 @@ impl PlanetAI for AI {
         &mut self,
         state: &mut PlanetState,
         _: &Generator,
-        _: &Combinator,
+        comb: &Combinator,
         msg: ExplorerToPlanet,
     ) -> Option<PlanetToExplorer> {
         if self.is_stopped {
@@ -89,9 +89,17 @@ impl PlanetAI for AI {
         }
         match msg {
             ExplorerToPlanet::SupportedResourceRequest { .. }
-            | ExplorerToPlanet::SupportedCombinationRequest { .. }
-            | ExplorerToPlanet::GenerateResourceRequest { .. }
-            | ExplorerToPlanet::CombineResourceRequest { .. } => todo!(),
+            | ExplorerToPlanet::GenerateResourceRequest { .. } => todo!(),
+            ExplorerToPlanet::SupportedCombinationRequest { .. } => {
+                Some(PlanetToExplorer::SupportedCombinationResponse {
+                    combination_list: comb.all_available_recipes(),
+                })
+            }
+            ExplorerToPlanet::CombineResourceRequest { .. } => {
+                Some(PlanetToExplorer::CombineResourceResponse {
+                    complex_response: None,
+                })
+            }
             ExplorerToPlanet::AvailableEnergyCellRequest { .. } => {
                 let tmp = state.cells_iter().filter(|&cell| cell.is_charged()).count();
                 let count = tmp.try_into().unwrap_or_default();

@@ -1,6 +1,1 @@
-# Ignore the entire target directory
-/target/*
-
-# Un-ignore the target/doc directory and all its contents
-!/target/doc/
-!/target/doc/** 
+/target

@@ -1,0 +1,1 @@
+searchState.loadedDescShard("trip", 0, "The wrapper for the planet.\nReturns the argument unchanged.\nCalls <code>U::from(self)</code>.\nCreates a new Trip instance with the given parameters and …\nRuns the planet’s operations and returns an error if …")

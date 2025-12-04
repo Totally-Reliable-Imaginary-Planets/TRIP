@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["PlanetType"],"struct":["Planet","PlanetState"],"trait":["PlanetAI"]};

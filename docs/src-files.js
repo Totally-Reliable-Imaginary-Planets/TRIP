@@ -1,2 +1,2 @@
-createSrcSidebar('[["TRIP",["",[],["lib.rs"]]],["common_game",["",[["components",[],["asteroid.rs","energy_cell.rs","generator.rs","planet.rs","resource.rs","rocket.rs","sunray.rs"]],["protocols",[],["messages.rs"]]],["components.rs","lib.rs","protocols.rs"]]],["lazy_static",["",[],["inline_lazy.rs","lib.rs"]]],["paste",["",[],["attr.rs","error.rs","lib.rs","segment.rs"]]]]');
-//{"start":19,"fragment_lengths":[27,214,52,63]}
+createSrcSidebar('[["trip",["",[],["ai.rs","lib.rs"]]],["trip",["",[],["lib.rs"]]]]');
+//{"start":19,"fragment_lengths":[35,28]}

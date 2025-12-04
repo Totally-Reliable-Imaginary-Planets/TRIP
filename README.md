@@ -1,6 +1,6 @@
 # TRIP
 
-[![Docs](https://docs.rs/trip/badge.svg)](https://totally-reliable-imaginary-planets.github.io/TRIP/TRIP/index.html)
+[![Docs]](https://totally-reliable-imaginary-planets.github.io/TRIP/TRIP/index.html)
 
 ## Examples
 
@@ -11,13 +11,13 @@ Add this to your `Cargo.toml`:
 ### SSH
 ```toml
 [dependencies]
-TRIP = { git = "git@github.com/Totally-Reliable-Imaginary-Planets/TRIP.git", branch = "main" }
+trip = { git = "git@github.com/Totally-Reliable-Imaginary-Planets/TRIP.git", branch = "main" }
 ```
 
 ### HTTPS
 ```toml
 [dependencies]
-TRIP = { git = "https://github.com/Totally-Reliable-Imaginary-Planets/TRIP.git", branch = "main" }
+trip = { git = "https://github.com/Totally-Reliable-Imaginary-Planets/TRIP.git", branch = "main" }
 ```
 
 ## Documentation

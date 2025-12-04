@@ -45,7 +45,7 @@ impl PlanetAI for AI {
                     let cell = state.cell_mut(index);
                     cell.charge(s);
                     match state.build_rocket(index) {
-                        Ok(()) => println!("Rocket builded successfully"),
+                        Ok(()) => println!("Rocket built successfully"),
                         Err(e) => println!("Rocekt Failed to be built: {e}"),
                     }
                 }
@@ -55,8 +55,8 @@ impl PlanetAI for AI {
             }
             OrchestratorToPlanet::IncomingExplorerRequest { .. }
             | OrchestratorToPlanet::OutgoingExplorerRequest { .. }
-            | OrchestratorToPlanet::InternalStateRequest
-            | OrchestratorToPlanet::Asteroid(_)
+            | OrchestratorToPlanet::InternalStateRequest => todo!(),
+            OrchestratorToPlanet::Asteroid(_)
             | OrchestratorToPlanet::StartPlanetAI
             | OrchestratorToPlanet::StopPlanetAI => None,
         }

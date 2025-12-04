@@ -13,13 +13,12 @@ struct AI {
 
 impl AI {
     fn new() -> Self {
-        Self {
-            is_stopped: true,
-        }
+        Self { is_stopped: true }
     }
 }
 
-impl PlanetAI for AI {    /// Called when the planet starts.
+impl PlanetAI for AI {
+    /// Called when the planet starts.
     fn start(&mut self, _: &PlanetState) {
         self.is_stopped = false;
     }

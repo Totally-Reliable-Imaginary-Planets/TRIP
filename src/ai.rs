@@ -1,6 +1,7 @@
 use common_game::components::planet::{PlanetAI, PlanetState};
 use common_game::components::resource::{Combinator, Generator};
 use common_game::components::rocket::Rocket;
+use common_game::protocols::messages::PlanetToOrchestrator::SunrayAck;
 use common_game::protocols::messages::{
     ExplorerToPlanet, OrchestratorToPlanet, PlanetToExplorer, PlanetToOrchestrator,
 };
@@ -30,12 +31,35 @@ impl PlanetAI for AI {
     /// Handles a message from the orchestrator.
     fn handle_orchestrator_msg(
         &mut self,
-        _: &mut PlanetState,
+        state: &mut PlanetState,
         _: &Generator,
         _: &Combinator,
-        _: OrchestratorToPlanet,
+        msg: OrchestratorToPlanet,
     ) -> Option<PlanetToOrchestrator> {
-        None
+        if self.is_stopped {
+            return None;
+        }
+        match msg {
+            OrchestratorToPlanet::Sunray(s) => {
+                if let Some(index) = state.cells_iter().position(|cell| !cell.is_charged()) {
+                    let cell = state.cell_mut(index);
+                    cell.charge(s);
+                    match state.build_rocket(index) {
+                        Ok(()) => println!("Rocket built successfully"),
+                        Err(e) => println!("Rocekt Failed to be built: {e}"),
+                    }
+                }
+                Some(SunrayAck {
+                    planet_id: state.id(),
+                })
+            }
+            OrchestratorToPlanet::IncomingExplorerRequest { .. }
+            | OrchestratorToPlanet::OutgoingExplorerRequest { .. }
+            | OrchestratorToPlanet::InternalStateRequest => todo!(),
+            OrchestratorToPlanet::Asteroid(_)
+            | OrchestratorToPlanet::StartPlanetAI
+            | OrchestratorToPlanet::StopPlanetAI => None,
+        }
     }
 
     /// Handles a message from an explorer.

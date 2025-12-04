@@ -44,9 +44,18 @@ impl PlanetAI for AI {
         _: &mut PlanetState,
         _: &Generator,
         _: &Combinator,
-        _: ExplorerToPlanet,
+        msg: ExplorerToPlanet,
     ) -> Option<PlanetToExplorer> {
-        None
+        if self.is_stopped {
+            return None;
+        }
+        match msg {
+            ExplorerToPlanet::SupportedResourceRequest { .. }
+            | ExplorerToPlanet::SupportedCombinationRequest { .. }
+            | ExplorerToPlanet::GenerateResourceRequest { .. }
+            | ExplorerToPlanet::CombineResourceRequest { .. }
+            | ExplorerToPlanet::AvailableEnergyCellRequest { .. } => todo!(),
+        }
     }
 
     /// Handles an incoming asteroid event.

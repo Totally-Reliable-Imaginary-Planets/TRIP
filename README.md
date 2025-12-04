@@ -9,13 +9,13 @@
 Add this to your `Cargo.toml`:
 
 ### SSH
-```rust
+```
 [dependencies]
 TRIP = { git = "git@github.com/Totally-Reliable-Imaginary-Planets/TRIP.git", branch = "main" }
 ```
 
 ### HTTPS
-```rust
+```
 [dependencies]
 TRIP = { git = "https://github.com/Totally-Reliable-Imaginary-Planets/TRIP.git", branch = "main" }
 ```

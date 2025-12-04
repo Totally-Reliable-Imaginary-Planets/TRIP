@@ -56,18 +56,6 @@ impl PlanetAI for AI {
     ///
     /// # Logging
     ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # let mut planet = Planet::default();
-    /// # let mut state = PlanetState::new(planet.id());
-    /// # let msg = OrchestratorToPlanet::Sunray(SunrayData::default());
-    /// let response = planet.handle_orchestrator_msg(&mut state, &Generator, &Combinator, msg);
-    /// if let Some(PlanetToOrchestrator::SunrayAck(ack)) = response {
-    ///     println!("Acknowledged by planet: {}", ack.planet_id);
-    /// }
-    /// ```
-    ///
     /// # Panics
     ///
     /// Panics if:

@@ -1,65 +1,13 @@
-use common_game::components::planet::{Planet, PlanetAI, PlanetState, PlanetType};
-use common_game::components::resource::{BasicResourceType, Combinator, Generator};
-use common_game::components::rocket::Rocket;
+use common_game::components::planet::{Planet, PlanetType};
+use common_game::components::resource::BasicResourceType;
 use common_game::protocols::messages::{
     ExplorerToPlanet, OrchestratorToPlanet, PlanetToExplorer, PlanetToOrchestrator,
 };
 use std::sync::mpsc;
 
-/// The AI implementation for our planet
-struct AI {
-    is_stopped: bool,
-}
+mod ai;
 
-impl AI {
-    fn new() -> Self {
-        Self { is_stopped: true }
-    }
-}
-
-impl PlanetAI for AI {
-    /// Called when the planet starts.
-    fn start(&mut self, _: &PlanetState) {
-        self.is_stopped = false;
-    }
-
-    /// Called when the planet stops.
-    fn stop(&mut self, _: &PlanetState) {
-        self.is_stopped = true;
-    }
-
-    /// Handles a message from the orchestrator.
-    fn handle_orchestrator_msg(
-        &mut self,
-        _: &mut PlanetState,
-        _: &Generator,
-        _: &Combinator,
-        _: OrchestratorToPlanet,
-    ) -> Option<PlanetToOrchestrator> {
-        None
-    }
-
-    /// Handles a message from an explorer.
-    fn handle_explorer_msg(
-        &mut self,
-        _: &mut PlanetState,
-        _: &Generator,
-        _: &Combinator,
-        _: ExplorerToPlanet,
-    ) -> Option<PlanetToExplorer> {
-        None
-    }
-
-    /// Handles an incoming asteroid event.
-    fn handle_asteroid(
-        &mut self,
-        _: &mut PlanetState,
-        _: &Generator,
-        _: &Combinator,
-    ) -> Option<Rocket> {
-        None
-    }
-}
+use crate::ai::AI;
 
 /// The wrapper for the planet.
 ///

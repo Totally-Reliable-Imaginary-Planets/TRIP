@@ -120,7 +120,35 @@ impl PlanetAI for AI {
         None
     }
 
-    /// Handles an incoming asteroid event.
+    /// Handles an incoming asteroid event by launching an existing rocket or building a new one.
+    ///
+    /// # Behavior
+    ///
+    /// 1. **Launch**: If a rocket is already built (`state.has_rocket()`), it is launched immediately
+    ///    and returned.
+    /// 2. **Build & Launch**: If no rocket exists, the method searches for the first charged energy cell
+    ///    and attempts to build a rocket on it. If successful, the newly built rocket is launched and returned.
+    /// 3. **Failure**: Returns `None` if no rocket was available and construction failed or no charged cell existed.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(Rocket)`: A rocket was successfully launched (either pre-existing or newly built).
+    /// - `None`: No rocket was launched (no rocket present and build failed or no charged cell).
+    ///
+    /// # Side Effects
+    ///
+    /// - Mutates `state`: may consume a rocket via `take_rocket()` and modify cells during construction.
+    /// - Prints log messages on build success or failure (consider using `log` crate instead of `println!`).
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// if let Some(launched) = planet.handle_asteroid(&mut state, &gen, &comb) {
+    ///     println!("Rocket launched successfully!");
+    /// } else {
+    ///     println!("No rocket launched.");
+    /// }
+    /// ```
     fn handle_asteroid(
         &mut self,
         state: &mut PlanetState,

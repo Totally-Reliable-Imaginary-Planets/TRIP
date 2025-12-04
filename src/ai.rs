@@ -89,10 +89,10 @@ impl PlanetAI for AI {
                     planet_id: state.id(),
                 })
             }
-            OrchestratorToPlanet::IncomingExplorerRequest { .. }
-            | OrchestratorToPlanet::OutgoingExplorerRequest { .. }
-            | OrchestratorToPlanet::InternalStateRequest => todo!(),
-            OrchestratorToPlanet::Asteroid(_)
+            OrchestratorToPlanet::InternalStateRequest => todo!(),
+            OrchestratorToPlanet::OutgoingExplorerRequest { .. }
+            | OrchestratorToPlanet::IncomingExplorerRequest { .. }
+            | OrchestratorToPlanet::Asteroid(_)
             | OrchestratorToPlanet::StartPlanetAI
             | OrchestratorToPlanet::StopPlanetAI => None,
         }

@@ -15,7 +15,7 @@ fn test_planet_sunray_ack() {
         .send(OrchestratorToPlanet::Sunray(Sunray::default()))
         .expect("Failed to send sunray message");
 
-    match harness.recv_with_timeout() {
+    match harness.recv_pto_with_timeout() {
         PlanetToOrchestrator::SunrayAck { planet_id: 0 } => {}
         _other => panic!("Wrong response received"),
     }
@@ -34,7 +34,7 @@ fn test_planet_asteroid_ack() {
         .send(OrchestratorToPlanet::Asteroid(Asteroid::default()))
         .expect("Failed to send asteroid message");
 
-    match harness.recv_with_timeout() {
+    match harness.recv_pto_with_timeout() {
         PlanetToOrchestrator::AsteroidAck {
             rocket: None,
             planet_id: 0,
@@ -56,7 +56,7 @@ fn test_planet_survive_asteroid() {
         .send(OrchestratorToPlanet::Sunray(Sunray::default()))
         .expect("Failed to send sunray message");
 
-    match harness.recv_with_timeout() {
+    match harness.recv_pto_with_timeout() {
         PlanetToOrchestrator::SunrayAck { planet_id: 0 } => {}
         _other => panic!("Wrong response received"),
     }
@@ -66,7 +66,7 @@ fn test_planet_survive_asteroid() {
         .send(OrchestratorToPlanet::Asteroid(Asteroid::default()))
         .expect("Failed to send asteroid message");
 
-    match harness.recv_with_timeout() {
+    match harness.recv_pto_with_timeout() {
         PlanetToOrchestrator::AsteroidAck {
             rocket: Some(_),
             planet_id: 0,

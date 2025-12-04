@@ -203,3 +203,64 @@ fn test_planet_survive_asteroid() {
     let result = harness.stop_and_join();
     assert!(result.is_ok());
 }
+
+#[test]
+fn test_planet_internal_state_resp() {
+    let harness = common::TestHarness::setup();
+    harness.start();
+
+    harness
+        .orch_tx
+        .send(OrchestratorToPlanet::InternalStateRequest)
+        .expect("Failed to send asteroid message");
+
+    match harness.recv_pto_with_timeout() {
+        PlanetToOrchestrator::InternalStateResponse { planet_id: 0, .. } => {}
+        _other => panic!("Wrong response received"),
+    }
+
+    let result = harness.stop_and_join();
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_planet_incoming_expl_resp() {
+    let harness = common::TestHarness::setup();
+    harness.start();
+    let (expl_tx, expl_rx) = mpsc::channel();
+
+    harness
+        .orch_tx
+        .send(OrchestratorToPlanet::IncomingExplorerRequest {
+            explorer_id: 0,
+            new_mpsc_sender: expl_tx,
+        })
+        .expect("Failed to send asteroid message");
+
+    match harness.recv_pto_with_timeout() {
+        PlanetToOrchestrator::IncomingExplorerResponse { planet_id: 0, .. } => {}
+        _other => panic!("Wrong response received"),
+    }
+
+    let result = harness.stop_and_join();
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_planet_outgoing_expl_resp() {
+    let harness = common::TestHarness::setup();
+    harness.start();
+
+    harness
+        .orch_tx
+        .send(OrchestratorToPlanet::OutgoingExplorerRequest { explorer_id: 0 })
+        .expect("Failed to send asteroid message");
+
+    match harness.recv_pto_with_timeout() {
+        PlanetToOrchestrator::OutgoingExplorerResponse { planet_id: 0, .. } => {}
+        _other => panic!("Wrong response received"),
+    }
+
+    let result = harness.stop_and_join();
+    assert!(result.is_ok());
+}

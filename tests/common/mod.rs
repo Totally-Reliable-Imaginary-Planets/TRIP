@@ -1,5 +1,6 @@
 use common_game::protocols::messages::ExplorerToPlanet;
 use common_game::protocols::messages::OrchestratorToPlanet;
+use common_game::protocols::messages::PlanetToExplorer;
 use common_game::protocols::messages::PlanetToOrchestrator;
 use std::sync::mpsc;
 use std::thread;
@@ -46,6 +47,12 @@ impl TestHarness {
         drop(self.orch_tx);
         drop(self.expl_tx);
         self.handle.join()
+    }
+
+    pub fn recv_pte_with_timeout(&self) -> PlanetToExplorer {
+        self.planet_rx2
+            .recv_timeout(Duration::from_millis(100))
+            .expect("No message received")
     }
 
     pub fn recv_pto_with_timeout(&self) -> PlanetToOrchestrator {

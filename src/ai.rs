@@ -29,6 +29,52 @@ impl PlanetAI for AI {
     }
 
     /// Handles a message from the orchestrator.
+    ///
+    /// This method processes incoming messages from the orchestrator when the planet is active.
+    /// If the planet is stopped (`self.is_stopped`), no messages are processed and `None` is returned immediately.
+    ///
+    /// # Behavior by Message Type
+    ///
+    /// - [`OrchestratorToPlanet::Sunray(s)`]:
+    ///   - Finds the first uncharged cell and charges it with the sunray data.
+    ///   - Attempts to build a rocket on that cell.
+    ///   - Always returns a [`SunrayAck`] containing the planet ID.
+    ///
+    /// - [`OrchestratorToPlanet::IncomingExplorerRequest`], [`OrchestratorToPlanet::OutgoingExplorerRequest`],
+    ///   [`OrchestratorToPlanet::InternalStateRequest`]:
+    ///   - Marked with `todo!()` — these will panic in release and should be implemented.
+    ///
+    /// - [`OrchestratorToPlanet::Asteroid`], [`OrchestratorToPlanet::StartPlanetAI`], [`OrchestratorToPlanet::StopPlanetAI`]:
+    ///   - Silently ignored (`None` returned).
+    ///
+    /// # Returns
+    ///
+    /// - `Some(PlanetToOrchestrator)`: A response is generated.
+    /// - `None`: No response is sent, either because the planet is stopped or the message is ignored.
+    ///
+    /// # Logging
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # let mut planet = Planet::default();
+    /// # let mut state = PlanetState::new(planet.id());
+    /// # let msg = OrchestratorToPlanet::Sunray(SunrayData::default());
+    /// let response = planet.handle_orchestrator_msg(&mut state, &Generator, &Combinator, msg);
+    /// if let Some(PlanetToOrchestrator::SunrayAck(ack)) = response {
+    ///     println!("Acknowledged by planet: {}", ack.planet_id);
+    /// }
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// - An unimplemented message variant (`IncomingExplorerRequest`, etc.) is received.
+    ///
+    /// # See Also
+    ///
+    /// - [`PlanetState::build_rocket`]
+    /// - [`SunrayAck`]
     fn handle_orchestrator_msg(
         &mut self,
         state: &mut PlanetState,

@@ -49,7 +49,7 @@ impl PlanetAI for AI {
     ///
     /// * `self`: Mutable reference to the planet's controller or handler, which includes runtime state like `is_stopped`.
     /// * `state`: Mutable reference to the current `PlanetState`, providing access to data like energy cells, resources, etc.
-    /// * `_`: Placeholder for `Generator` reference (not currently used in logic).
+    /// * `generator`: reference for `Generator`.
     /// * `comb`: reference for `Combinator`.
     /// * `msg`: The incoming message from the explorer, wrapped in the `ExplorerToPlanet` enum.
     ///
@@ -75,14 +75,6 @@ impl PlanetAI for AI {
     /// # Panics
     ///
     /// Panics if a non-implemented message variant is received.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// let msg = ExplorerToPlanet::AvailableEnergyCellRequest {};
-    /// let response = planet_handler.handle_explorer_msg(&mut state, &generator, &combinator, msg);
-    /// assert!(response.is_some());
-    /// ```
     fn handle_explorer_msg(
         &mut self,
         state: &mut PlanetState,

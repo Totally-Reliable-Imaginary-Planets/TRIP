@@ -1,9 +1,9 @@
 (function() {
-    var implementors = Object.fromEntries([["trip",[["impl UnsafeUnpin for <a class=\"struct\" href=\"trip/struct.AI.html\" title=\"struct trip::AI\">AI</a>",1,["trip::AI"]],["impl UnsafeUnpin for <a class=\"struct\" href=\"trip/struct.Trip.html\" title=\"struct trip::Trip\">Trip</a>",1,["trip::Trip"]]]]]);
+    var implementors = Object.fromEntries([["trip",[["impl UnsafeUnpin for <a class=\"struct\" href=\"trip/struct.AI.html\" title=\"struct trip::AI\">AI</a>",1,["trip::AI"]],["impl UnsafeUnpin for <a class=\"struct\" href=\"trip/struct.Trip.html\" title=\"struct trip::Trip\">Trip</a>",1,["trip::Trip"]]]],["trip",[["impl UnsafeUnpin for <a class=\"struct\" href=\"trip/struct.Trip.html\" title=\"struct trip::Trip\">Trip</a>",1,["trip::Trip"]]]]]);
     if (window.register_implementors) {
         window.register_implementors(implementors);
     } else {
         window.pending_implementors = implementors;
     }
 })()
-//{"start":57,"fragment_lengths":[262]}
+//{"start":57,"fragment_lengths":[262,141]}

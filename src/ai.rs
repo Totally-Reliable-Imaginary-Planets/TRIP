@@ -3,6 +3,7 @@ use common_game::components::planet::{PlanetAI, PlanetState};
 use common_game::components::resource::BasicResourceType;
 use common_game::components::resource::{Combinator, Generator};
 use common_game::components::rocket::Rocket;
+use common_game::protocols::messages::PlanetToOrchestrator::SunrayAck;
 use common_game::protocols::messages::{
     ExplorerToPlanet, OrchestratorToPlanet, PlanetToExplorer, PlanetToOrchestrator,
 };
@@ -30,14 +31,71 @@ impl PlanetAI for AI {
     }
 
     /// Handles a message from the orchestrator.
+    ///
+    /// This method processes incoming messages from the orchestrator when the planet is active.
+    /// If the planet is stopped (`self.is_stopped`), no messages are processed and `None` is returned immediately.
+    ///
+    /// # Behavior by Message Type
+    ///
+    /// - [`OrchestratorToPlanet::Sunray(s)`]:
+    ///   - Finds the first uncharged cell and charges it with the sunray data.
+    ///   - Attempts to build a rocket on that cell.
+    ///   - Always returns a [`SunrayAck`] containing the planet ID.
+    ///
+    /// - [`OrchestratorToPlanet::IncomingExplorerRequest`], [`OrchestratorToPlanet::OutgoingExplorerRequest`],
+    ///   [`OrchestratorToPlanet::InternalStateRequest`]:
+    ///   - Marked with `todo!()` — these will panic in release and should be implemented.
+    ///
+    /// - [`OrchestratorToPlanet::Asteroid`], [`OrchestratorToPlanet::StartPlanetAI`], [`OrchestratorToPlanet::StopPlanetAI`]:
+    ///   - Silently ignored (`None` returned).
+    ///
+    /// # Returns
+    ///
+    /// - `Some(PlanetToOrchestrator)`: A response is generated.
+    /// - `None`: No response is sent, either because the planet is stopped or the message is ignored.
+    ///
+    /// # Logging
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// - An unimplemented message variant (`IncomingExplorerRequest`, etc.) is received.
+    ///
+    /// # See Also
+    ///
+    /// - [`PlanetState::build_rocket`]
+    /// - [`SunrayAck`]
     fn handle_orchestrator_msg(
         &mut self,
-        _: &mut PlanetState,
+        state: &mut PlanetState,
         _: &Generator,
         _: &Combinator,
-        _: OrchestratorToPlanet,
+        msg: OrchestratorToPlanet,
     ) -> Option<PlanetToOrchestrator> {
-        None
+        if self.is_stopped {
+            return None;
+        }
+        match msg {
+            OrchestratorToPlanet::Sunray(s) => {
+                if let Some(index) = state.cells_iter().position(|cell| !cell.is_charged()) {
+                    let cell = state.cell_mut(index);
+                    cell.charge(s);
+                    match state.build_rocket(index) {
+                        Ok(()) => println!("Rocket built successfully"),
+                        Err(e) => println!("Rocekt Failed to be built: {e}"),
+                    }
+                }
+                Some(SunrayAck {
+                    planet_id: state.id(),
+                })
+            }
+            OrchestratorToPlanet::IncomingExplorerRequest { .. }
+            | OrchestratorToPlanet::OutgoingExplorerRequest { .. }
+            | OrchestratorToPlanet::InternalStateRequest => todo!(),
+            OrchestratorToPlanet::Asteroid(_)
+            | OrchestratorToPlanet::StartPlanetAI
+            | OrchestratorToPlanet::StopPlanetAI => None,
+        }
     }
 
     /// Handles incoming messages from an `Explorer` agent and generates appropriate responses based on the planet's current state.
@@ -125,13 +183,53 @@ impl PlanetAI for AI {
         }
     }
 
-    /// Handles an incoming asteroid event.
+    /// Handles an incoming asteroid event by launching an existing rocket or building a new one.
+    ///
+    /// # Behavior
+    ///
+    /// 1. **Launch**: If a rocket is already built (`state.has_rocket()`), it is launched immediately
+    ///    and returned.
+    /// 2. **Build & Launch**: If no rocket exists, the method searches for the first charged energy cell
+    ///    and attempts to build a rocket on it. If successful, the newly built rocket is launched and returned.
+    /// 3. **Failure**: Returns `None` if no rocket was available and construction failed or no charged cell existed.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(Rocket)`: A rocket was successfully launched (either pre-existing or newly built).
+    /// - `None`: No rocket was launched (no rocket present and build failed or no charged cell).
+    ///
+    /// # Side Effects
+    ///
+    /// - Mutates `state`: may consume a rocket via `take_rocket()` and modify cells during construction.
+    /// - Prints log messages on build success or failure (consider using `log` crate instead of `println!`).
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// if let Some(launched) = planet.handle_asteroid(&mut state, &gen, &comb) {
+    ///     println!("Rocket launched successfully!");
+    /// } else {
+    ///     println!("No rocket launched.");
+    /// }
+    /// ```
     fn handle_asteroid(
         &mut self,
-        _: &mut PlanetState,
+        state: &mut PlanetState,
         _: &Generator,
         _: &Combinator,
     ) -> Option<Rocket> {
+        if state.has_rocket() {
+            return state.take_rocket();
+        }
+        if let Some(index) = state.cells_iter().position(EnergyCell::is_charged) {
+            match state.build_rocket(index) {
+                Ok(()) => {
+                    println!("Rocket built successfully");
+                    return state.take_rocket();
+                }
+                Err(e) => println!("Rocekt Failed to be built: {e}"),
+            }
+        }
         None
     }
 }

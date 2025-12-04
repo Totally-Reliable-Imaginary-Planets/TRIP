@@ -1,5 +1,6 @@
 use common_game::components::energy_cell::EnergyCell;
 use common_game::components::planet::{PlanetAI, PlanetState};
+use common_game::components::resource::BasicResourceType;
 use common_game::components::resource::{Combinator, Generator};
 use common_game::components::rocket::Rocket;
 use common_game::protocols::messages::PlanetToOrchestrator::SunrayAck;
@@ -109,15 +110,89 @@ impl PlanetAI for AI {
         }
     }
 
-    /// Handles a message from an explorer.
+    /// Handles incoming messages from an `Explorer` agent and generates appropriate responses based on the planet's current state.
+    ///
+    /// This function processes various types of requests such as resource availability, combination support,
+    /// generation, and energy cell status. If the planet is stopped (shut down or inactive), no responses are sent.
+    ///
+    /// # Parameters
+    ///
+    /// * `self`: Mutable reference to the planet's controller or handler, which includes runtime state like `is_stopped`.
+    /// * `state`: Mutable reference to the current `PlanetState`, providing access to data like energy cells, resources, etc.
+    /// * `generator`: reference for `Generator`.
+    /// * `comb`: reference for `Combinator`.
+    /// * `msg`: The incoming message from the explorer, wrapped in the `ExplorerToPlanet` enum.
+    ///
+    /// # Returns
+    ///
+    /// Returns an `Option<PlanetToExplorer>`:
+    /// - `Some(response)` if a valid response can be generated.
+    /// - `None` if the planet is stopped or the message type is unsupported/not yet implemented.
+    ///
+    /// # Message Handling
+    ///
+    /// Currently supports:
+    /// - `AvailableEnergyCellRequest`: Responds with the count of charged energy cells.
+    /// - `SupportedCombinationRequest`: Respond with the list of available comination recipes so
+    ///   an empty hashset
+    /// - `CombineResourceRequest`: Responde with the complex rescourc this planet can generate so
+    ///   `None`
+    /// - `SupportedResourceRequest`: Responds with the basic resource type hashset containing the
+    ///   only supported resource `Oxygen`
+    /// - `GenerateResourceRequest`: Responds only to request for the `Oxygen` resource althought
+    ///   return `None`
+    ///
+    /// # Panics
+    ///
+    /// Panics if a non-implemented message variant is received.
     fn handle_explorer_msg(
         &mut self,
-        _: &mut PlanetState,
-        _: &Generator,
-        _: &Combinator,
-        _: ExplorerToPlanet,
+        state: &mut PlanetState,
+        generator: &Generator,
+        comb: &Combinator,
+        msg: ExplorerToPlanet,
     ) -> Option<PlanetToExplorer> {
-        None
+        if self.is_stopped {
+            return None;
+        }
+        match msg {
+            ExplorerToPlanet::SupportedResourceRequest { explorer_id: _ } => {
+                Some(PlanetToExplorer::SupportedResourceResponse {
+                    resource_list: generator.all_available_recipes(),
+                })
+            }
+            ExplorerToPlanet::GenerateResourceRequest {
+                explorer_id: _,
+                resource: BasicResourceType::Oxygen,
+            } => state
+                .cells_iter()
+                .position(EnergyCell::is_charged)
+                .and_then(|index| generator.make_oxygen(state.cell_mut(index)).ok())
+                .map(|r| {
+                    println!("Resource generated");
+                    PlanetToExplorer::GenerateResourceResponse {
+                        resource: Some(common_game::components::resource::BasicResource::Oxygen(r)),
+                    }
+                }),
+            ExplorerToPlanet::GenerateResourceRequest { .. } => None,
+            ExplorerToPlanet::SupportedCombinationRequest { .. } => {
+                Some(PlanetToExplorer::SupportedCombinationResponse {
+                    combination_list: comb.all_available_recipes(),
+                })
+            }
+            ExplorerToPlanet::CombineResourceRequest { .. } => {
+                Some(PlanetToExplorer::CombineResourceResponse {
+                    complex_response: None,
+                })
+            }
+            ExplorerToPlanet::AvailableEnergyCellRequest { .. } => {
+                let tmp = state.cells_iter().filter(|&cell| cell.is_charged()).count();
+                let count = tmp.try_into().unwrap_or_default();
+                Some(PlanetToExplorer::AvailableEnergyCellResponse {
+                    available_cells: count,
+                })
+            }
+        }
     }
 
     /// Handles an incoming asteroid event by launching an existing rocket or building a new one.

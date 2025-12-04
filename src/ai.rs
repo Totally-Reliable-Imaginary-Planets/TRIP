@@ -48,7 +48,7 @@ impl PlanetAI for AI {
     /// * `self`: Mutable reference to the planet's controller or handler, which includes runtime state like `is_stopped`.
     /// * `state`: Mutable reference to the current `PlanetState`, providing access to data like energy cells, resources, etc.
     /// * `_`: Placeholder for `Generator` reference (not currently used in logic).
-    /// * `_`: Placeholder for `Combinator` reference (not currently used in logic).
+    /// * `comb`: reference for `Combinator`.
     /// * `msg`: The incoming message from the explorer, wrapped in the `ExplorerToPlanet` enum.
     ///
     /// # Returns
@@ -61,8 +61,12 @@ impl PlanetAI for AI {
     ///
     /// Currently supports:
     /// - `AvailableEnergyCellRequest`: Responds with the count of charged energy cells.
+    /// - `SupportedCombinationRequest`: Respond with the list of available comination recipes so
+    /// an empty hashset
+    /// - `CombineResourceRequest`: Responde with the complex rescourc this planet can generate so
+    /// `None`
     ///
-    /// Other message types (`SupportedResourceRequest`, `GenerateResourceRequest`, etc.) are not yet implemented
+    /// Other message types (`SupportedResourceRequest`, `GenerateResourceRequest`) are not yet implemented
     /// and will trigger a `todo!()` panic if received.
     ///
     /// # Panics

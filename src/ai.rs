@@ -1,3 +1,4 @@
+use common_game::components::energy_cell::EnergyCell;
 use common_game::components::planet::{PlanetAI, PlanetState};
 use common_game::components::resource::{Combinator, Generator};
 use common_game::components::rocket::Rocket;
@@ -122,10 +123,22 @@ impl PlanetAI for AI {
     /// Handles an incoming asteroid event.
     fn handle_asteroid(
         &mut self,
-        _: &mut PlanetState,
+        state: &mut PlanetState,
         _: &Generator,
         _: &Combinator,
     ) -> Option<Rocket> {
+        if state.has_rocket() {
+            return state.take_rocket();
+        }
+        if let Some(index) = state.cells_iter().position(EnergyCell::is_charged) {
+            match state.build_rocket(index) {
+                Ok(()) => {
+                    println!("Rocket built successfully");
+                    return state.take_rocket();
+                }
+                Err(e) => println!("Rocekt Failed to be built: {e}"),
+            }
+        }
         None
     }
 }

@@ -1,6 +1,6 @@
 # TRIP
 
-[![Docs]](https://totally-reliable-imaginary-planets.github.io/TRIP/TRIP/index.html)
+[![Docs]](https://totally-reliable-imaginary-planets.github.io/TRIP/)
 
 ## Examples
 
@@ -22,4 +22,4 @@ trip = { git = "https://github.com/Totally-Reliable-Imaginary-Planets/TRIP.git",
 
 ## Documentation
 
-Full API documentation is available on [docs](https://totally-reliable-imaginary-planets.github.io/TRIP/TRIP/index.html)
+Full API documentation is available on [docs](https://totally-reliable-imaginary-planets.github.io/TRIP/)

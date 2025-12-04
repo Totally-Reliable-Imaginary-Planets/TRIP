@@ -11,7 +11,7 @@ pub(crate) struct AI {
 }
 
 impl AI {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self { is_stopped: true }
     }
 }

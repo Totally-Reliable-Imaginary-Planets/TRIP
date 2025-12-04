@@ -7,14 +7,26 @@ use common_game::protocols::messages::{
 use std::sync::mpsc;
 
 /// The AI implementation for our planet
-pub struct AI;
+struct AI {
+    is_stopped: bool,
+}
+
+impl AI {
+    fn new() -> Self {
+        Self { is_stopped: true }
+    }
+}
 
 impl PlanetAI for AI {
-    /// Called when the planet starts. Does nothing.
-    fn start(&mut self, _: &PlanetState) {}
+    /// Called when the planet starts.
+    fn start(&mut self, _: &PlanetState) {
+        self.is_stopped = false;
+    }
 
-    /// Called when the planet stops. Does nothing.
-    fn stop(&mut self, _: &PlanetState) {}
+    /// Called when the planet stops.
+    fn stop(&mut self, _: &PlanetState) {
+        self.is_stopped = true;
+    }
 
     /// Handles a message from the orchestrator.
     fn handle_orchestrator_msg(
@@ -97,7 +109,7 @@ impl Trip {
         let planet = Planet::new(
             id,
             PlanetType::A,
-            Box::new(AI),
+            Box::new(AI::new()),
             // gen rule
             vec![BasicResourceType::Oxygen],
             vec![],

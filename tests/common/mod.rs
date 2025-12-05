@@ -5,7 +5,7 @@ use common_game::protocols::messages::PlanetToOrchestrator;
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
-use trip::Trip;
+use trip::trip;
 
 // Helper struct to hold test resources
 pub struct TestHarness {
@@ -21,9 +21,9 @@ impl TestHarness {
         let (orch_tx, orch_rx) = mpsc::channel();
         let (planet_tx, planet_rx) = mpsc::channel();
         let (expl_tx, expl_rx) = mpsc::channel();
-        let (planet_tx2, planet_rx2) = mpsc::channel(); // unused in tests
+        let (_planet_tx2, planet_rx2) = mpsc::channel(); // unused in tests
 
-        let mut trip = Trip::new(0, orch_rx, planet_tx, expl_rx, planet_tx2).unwrap();
+        let mut trip = trip(0, orch_rx, planet_tx, expl_rx).unwrap();
 
         let handle = thread::spawn(move || trip.run());
 

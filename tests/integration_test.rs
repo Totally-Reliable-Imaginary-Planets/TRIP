@@ -6,7 +6,7 @@ use common_game::protocols::messages::PlanetToExplorer;
 use common_game::protocols::messages::PlanetToOrchestrator;
 use std::sync::mpsc;
 use std::thread;
-use trip::Trip;
+use trip::trip;
 
 mod common;
 
@@ -15,9 +15,8 @@ fn test_planet_run() {
     let (orch_tx, orch_rx) = mpsc::channel();
     let (planet_tx, _planet_rx) = mpsc::channel();
     let (expl_tx, expl_rx) = mpsc::channel();
-    let (planet_tx2, _planet_rx2) = mpsc::channel();
 
-    let mut trip = Trip::new(0, orch_rx, planet_tx, expl_rx, planet_tx2).unwrap();
+    let mut trip = trip(0, orch_rx, planet_tx, expl_rx).unwrap();
 
     let handle = thread::spawn(move || trip.run());
 
@@ -40,9 +39,8 @@ fn test_concurrent_message_sending() {
     let (orch_tx, orch_rx) = mpsc::channel();
     let (planet_tx, _planet_rx) = mpsc::channel();
     let (_expl_tx, expl_rx) = mpsc::channel();
-    let (planet_tx2, _planet_rx2) = mpsc::channel();
 
-    let mut trip = Trip::new(1, orch_rx, planet_tx, expl_rx, planet_tx2).unwrap();
+    let mut trip = trip(1, orch_rx, planet_tx, expl_rx).unwrap();
 
     let handle = std::thread::spawn(move || {
         for _ in 0..100 {

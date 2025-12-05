@@ -169,9 +169,10 @@ impl PlanetAI for AI {
                 })
             }
             ExplorerToPlanet::CombineResourceRequest { .. } => {
-                Some(PlanetToExplorer::CombineResourceResponse {
+                /*Some(PlanetToExplorer::CombineResourceResponse {
                     complex_response: None,
-                })
+                })*/
+                None
             }
             ExplorerToPlanet::AvailableEnergyCellRequest { .. } => {
                 let tmp = state.cells_iter().filter(|&cell| cell.is_charged()).count();
@@ -203,15 +204,6 @@ impl PlanetAI for AI {
     /// - Mutates `state`: may consume a rocket via `take_rocket()` and modify cells during construction.
     /// - Prints log messages on build success or failure (consider using `log` crate instead of `println!`).
     ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// if let Some(launched) = planet.handle_asteroid(&mut state, &gen, &comb) {
-    ///     println!("Rocket launched successfully!");
-    /// } else {
-    ///     println!("No rocket launched.");
-    /// }
-    /// ```
     fn handle_asteroid(
         &mut self,
         state: &mut PlanetState,

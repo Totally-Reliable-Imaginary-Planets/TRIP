@@ -169,9 +169,10 @@ impl PlanetAI for AI {
                 })
             }
             ExplorerToPlanet::CombineResourceRequest { .. } => {
-                Some(PlanetToExplorer::CombineResourceResponse {
+                /*Some(PlanetToExplorer::CombineResourceResponse {
                     complex_response: None,
-                })
+                })*/
+                None
             }
             ExplorerToPlanet::AvailableEnergyCellRequest { .. } => {
                 let tmp = state.cells_iter().filter(|&cell| cell.is_charged()).count();

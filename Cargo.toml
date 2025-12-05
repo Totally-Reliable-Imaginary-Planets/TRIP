@@ -4,4 +4,4 @@ version = "0.2.0"
 edition = "2024"
 
 [dependencies]
-common-game = { git = "ssh://git@uni.github.com/AleFacciUnitn/common.git", branch = "main"}
+common-game = { git = "ssh://git@uni.github.com/unitn-ap-2025/common.git", branch = "main"}

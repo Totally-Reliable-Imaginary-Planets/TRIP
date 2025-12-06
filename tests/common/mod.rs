@@ -11,8 +11,8 @@ use trip::trip;
 pub struct TestHarness {
     pub orch_tx: mpsc::Sender<OrchestratorToPlanet>,
     pub planet_rx: mpsc::Receiver<PlanetToOrchestrator>,
-    pub planet_rx2: mpsc::Receiver<PlanetToExplorer>,
     pub expl_tx: mpsc::Sender<ExplorerToPlanet>,
+    pub planet_rx2: mpsc::Receiver<PlanetToExplorer>,
     pub handle: thread::JoinHandle<Result<(), String>>,
 }
 
@@ -30,8 +30,8 @@ impl TestHarness {
         Self {
             orch_tx,
             planet_rx,
-            expl_tx,
             planet_rx2,
+            expl_tx,
             handle,
         }
     }
@@ -46,6 +46,12 @@ impl TestHarness {
         self.orch_tx
             .send(OrchestratorToPlanet::StopPlanetAI)
             .expect("Failed to send StopPlanetAI");
+        drop(self.orch_tx);
+        drop(self.expl_tx);
+        self.handle.join()
+    }
+
+    pub fn join(self) -> thread::Result<Result<(), String>> {
         drop(self.orch_tx);
         drop(self.expl_tx);
         self.handle.join()

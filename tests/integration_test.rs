@@ -77,13 +77,22 @@ fn test_concurrent_message_sending() {
 fn test_planet_supported_resource_resp() {
     let harness = common::TestHarness::setup();
     harness.start();
+    let (expl_tx, expl_rx) = mpsc::channel();
+
+    harness
+        .orch_tx
+        .send(IncomingExplorerRequest {
+            explorer_id: 0,
+            new_mpsc_sender: expl_tx,
+        })
+        .expect("Failed to send sunray message");
 
     harness
         .expl_tx
         .send(ExplorerToPlanet::SupportedResourceRequest { explorer_id: 0 })
         .expect("Failed to send asteroid message");
 
-    match harness.recv_pte_with_timeout() {
+    match expl_rx.recv().expect("No message received") {
         PlanetToExplorer::SupportedResourceResponse { .. } => {}
         _other => panic!("Wrong response received"),
     }
@@ -96,13 +105,22 @@ fn test_planet_supported_resource_resp() {
 fn test_planet_supported_combination_resp() {
     let harness = common::TestHarness::setup();
     harness.start();
+    let (expl_tx, expl_rx) = mpsc::channel();
+
+    harness
+        .orch_tx
+        .send(IncomingExplorerRequest {
+            explorer_id: 0,
+            new_mpsc_sender: expl_tx,
+        })
+        .expect("Failed to send sunray message");
 
     harness
         .expl_tx
         .send(ExplorerToPlanet::SupportedCombinationRequest { explorer_id: 0 })
         .expect("Failed to send asteroid message");
 
-    match harness.recv_pte_with_timeout() {
+    match expl_rx.recv().expect("No message received") {
         PlanetToExplorer::SupportedCombinationResponse { .. } => {}
         _other => panic!("Wrong response received"),
     }
@@ -235,7 +253,7 @@ fn test_planet_internal_state_resp() {
 fn test_planet_incoming_expl_resp() {
     let harness = common::TestHarness::setup();
     harness.start();
-    let (expl_tx, expl_rx) = mpsc::channel();
+    let (expl_tx, _expl_rx) = mpsc::channel();
 
     harness
         .orch_tx

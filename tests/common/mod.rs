@@ -51,6 +51,12 @@ impl TestHarness {
         self.handle.join()
     }
 
+    pub fn join(self) -> thread::Result<Result<(), String>> {
+        drop(self.orch_tx);
+        drop(self.expl_tx);
+        self.handle.join()
+    }
+
     pub fn recv_pte_with_timeout(&self) -> PlanetToExplorer {
         self.planet_rx2
             .recv_timeout(Duration::from_millis(100))

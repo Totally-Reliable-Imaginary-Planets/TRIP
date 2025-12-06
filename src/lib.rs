@@ -9,19 +9,17 @@ mod ai;
 
 use crate::ai::AI;
 
-
-
-    /// Creates a new Trip instance with the given parameters and initialized planet.
-    ///
-    /// Attempts to receive initial messages from both the orchestrator and explorer channels
-    /// to verify connectivity. Initializes the internal `Planet` with the provided ID,
-    /// AI, resource rules, and communication channels.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if either the `orch_to_planet` or `expl_to_planet` channel is disconnected,
-    /// indicating that the corresponding sender has been dropped and communication cannot be established.
-    /// Specific error messages indicate which channel failed.
+/// Creates a new Trip instance with the given parameters and initialized planet.
+///
+/// Attempts to receive initial messages from both the orchestrator and explorer channels
+/// to verify connectivity. Initializes the internal `Planet` with the provided ID,
+/// AI, resource rules, and communication channels.
+///
+/// # Errors
+///
+/// Returns an error if either the `orch_to_planet` or `expl_to_planet` channel is disconnected,
+/// indicating that the corresponding sender has been dropped and communication cannot be established.
+/// Specific error messages indicate which channel failed.
 pub fn trip(
     id: u32,
     orch_to_planet: mpsc::Receiver<OrchestratorToPlanet>,
@@ -56,7 +54,7 @@ pub fn trip(
         (orch_to_planet, planet_to_orch),
         expl_to_planet,
     )?;
-    Ok( planet )
+    Ok(planet)
 }
 /*
 /// The wrapper for the planet.

@@ -3,6 +3,7 @@ use common_game::components::planet::{PlanetAI, PlanetState};
 use common_game::components::resource::BasicResourceType;
 use common_game::components::resource::{Combinator, Generator};
 use common_game::components::rocket::Rocket;
+use common_game::protocols::messages::PlanetToOrchestrator::InternalStateResponse;
 use common_game::protocols::messages::PlanetToOrchestrator::SunrayAck;
 use common_game::protocols::messages::{
     ExplorerToPlanet, OrchestratorToPlanet, PlanetToExplorer, PlanetToOrchestrator,
@@ -89,7 +90,10 @@ impl PlanetAI for AI {
                     planet_id: state.id(),
                 })
             }
-            OrchestratorToPlanet::InternalStateRequest => todo!(),
+            OrchestratorToPlanet::InternalStateRequest => Some(InternalStateResponse {
+                planet_id: state.id(),
+                planet_state: state.to_dummy(),
+            }),
             OrchestratorToPlanet::OutgoingExplorerRequest { .. }
             | OrchestratorToPlanet::IncomingExplorerRequest { .. }
             | OrchestratorToPlanet::Asteroid(_)

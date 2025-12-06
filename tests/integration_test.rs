@@ -160,13 +160,13 @@ fn test_planet_asteroid_ack() {
 
     match harness.recv_pto_with_timeout() {
         PlanetToOrchestrator::AsteroidAck {
-            rocket: None,
+            destroyed: true,
             planet_id: 0,
         } => {}
         _other => panic!("Wrong response received"),
     }
 
-    let result = harness.stop_and_join();
+    let result = harness.join();
     assert!(result.is_ok());
 }
 
@@ -192,7 +192,7 @@ fn test_planet_survive_asteroid() {
 
     match harness.recv_pto_with_timeout() {
         PlanetToOrchestrator::AsteroidAck {
-            rocket: Some(_),
+            destroyed: false,
             planet_id: 0,
         } => {}
         _other => panic!("Wrong response received"),

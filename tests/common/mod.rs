@@ -1,6 +1,5 @@
 use common_game::protocols::messages::ExplorerToPlanet;
 use common_game::protocols::messages::OrchestratorToPlanet;
-use common_game::protocols::messages::PlanetToExplorer;
 use common_game::protocols::messages::PlanetToOrchestrator;
 use std::sync::mpsc;
 use std::thread;
@@ -12,7 +11,6 @@ pub struct TestHarness {
     pub orch_tx: mpsc::Sender<OrchestratorToPlanet>,
     pub planet_rx: mpsc::Receiver<PlanetToOrchestrator>,
     pub expl_tx: mpsc::Sender<ExplorerToPlanet>,
-    pub planet_rx2: mpsc::Receiver<PlanetToExplorer>,
     pub handle: thread::JoinHandle<Result<(), String>>,
 }
 
@@ -21,7 +19,6 @@ impl TestHarness {
         let (orch_tx, orch_rx) = mpsc::channel();
         let (planet_tx, planet_rx) = mpsc::channel();
         let (expl_tx, expl_rx) = mpsc::channel();
-        let (_planet_tx2, planet_rx2) = mpsc::channel(); // unused in tests
 
         let mut trip = trip(0, orch_rx, planet_tx, expl_rx).unwrap();
 
@@ -30,7 +27,6 @@ impl TestHarness {
         Self {
             orch_tx,
             planet_rx,
-            planet_rx2,
             expl_tx,
             handle,
         }
@@ -55,12 +51,6 @@ impl TestHarness {
         drop(self.orch_tx);
         drop(self.expl_tx);
         self.handle.join()
-    }
-
-    pub fn recv_pte_with_timeout(&self) -> PlanetToExplorer {
-        self.planet_rx2
-            .recv_timeout(Duration::from_millis(100))
-            .expect("No message received")
     }
 
     pub fn recv_pto_with_timeout(&self) -> PlanetToOrchestrator {

@@ -86,6 +86,7 @@ impl PlanetAI for AI {
                         Err(e) => println!("Rocekt Failed to be built: {e}"),
                     }
                 }
+                println!("Planet id: {}", state.id());
                 Some(SunrayAck {
                     planet_id: state.id(),
                 })
@@ -94,7 +95,8 @@ impl PlanetAI for AI {
                 planet_id: state.id(),
                 planet_state: state.to_dummy(),
             }),
-            OrchestratorToPlanet::OutgoingExplorerRequest { .. }
+            OrchestratorToPlanet::KillPlanet
+            | OrchestratorToPlanet::OutgoingExplorerRequest { .. }
             | OrchestratorToPlanet::IncomingExplorerRequest { .. }
             | OrchestratorToPlanet::Asteroid(_)
             | OrchestratorToPlanet::StartPlanetAI

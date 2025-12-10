@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["ai"],"struct":["Trip"]};
+window.SIDEBAR_ITEMS = {"fn":["trip"],"mod":["ai"]};

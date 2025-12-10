@@ -5,17 +5,27 @@ use common_game::protocols::messages::OrchestratorToPlanet;
 use common_game::protocols::messages::OrchestratorToPlanet::IncomingExplorerRequest;
 use common_game::protocols::messages::PlanetToExplorer;
 use common_game::protocols::messages::PlanetToOrchestrator;
-use std::sync::mpsc;
 use std::thread;
 use trip::trip;
+
+use std::sync::Once;
+
+static INIT: Once = Once::new();
+
+fn setup_logger() {
+    INIT.call_once(|| {
+        env_logger::builder().is_test(true).init();
+    });
+}
 
 mod common;
 
 #[test]
 fn test_planet_run() {
-    let (orch_tx, orch_rx) = mpsc::channel();
-    let (planet_tx, _planet_rx) = mpsc::channel();
-    let (expl_tx, expl_rx) = mpsc::channel();
+    setup_logger();
+    let (orch_tx, orch_rx) = crossbeam_channel::unbounded();
+    let (planet_tx, _planet_rx) = crossbeam_channel::unbounded();
+    let (expl_tx, expl_rx) = crossbeam_channel::unbounded();
 
     let mut trip = trip(0, orch_rx, planet_tx, expl_rx).unwrap();
 
@@ -37,9 +47,10 @@ fn test_planet_run() {
 
 #[test]
 fn test_concurrent_message_sending() {
-    let (orch_tx, orch_rx) = mpsc::channel();
-    let (planet_tx, _planet_rx) = mpsc::channel();
-    let (_expl_tx, expl_rx) = mpsc::channel();
+    setup_logger();
+    let (orch_tx, orch_rx) = crossbeam_channel::unbounded();
+    let (planet_tx, _planet_rx) = crossbeam_channel::unbounded();
+    let (_expl_tx, expl_rx) = crossbeam_channel::unbounded();
 
     let mut trip = trip(1, orch_rx, planet_tx, expl_rx).unwrap();
 
@@ -75,9 +86,10 @@ fn test_concurrent_message_sending() {
 
 #[test]
 fn test_planet_supported_resource_resp() {
+    setup_logger();
     let harness = common::TestHarness::setup();
     harness.start();
-    let (expl_tx, expl_rx) = mpsc::channel();
+    let (expl_tx, expl_rx) = crossbeam_channel::unbounded();
 
     harness
         .orch_tx
@@ -103,9 +115,10 @@ fn test_planet_supported_resource_resp() {
 
 #[test]
 fn test_planet_supported_combination_resp() {
+    setup_logger();
     let harness = common::TestHarness::setup();
     harness.start();
-    let (expl_tx, expl_rx) = mpsc::channel();
+    let (expl_tx, expl_rx) = crossbeam_channel::unbounded();
 
     harness
         .orch_tx
@@ -131,9 +144,10 @@ fn test_planet_supported_combination_resp() {
 
 #[test]
 fn test_planet_available_eng_cell_resp() {
+    setup_logger();
     let harness = common::TestHarness::setup();
     harness.start();
-    let (expl_tx, expl_rx) = mpsc::channel();
+    let (expl_tx, expl_rx) = crossbeam_channel::unbounded();
 
     harness
         .orch_tx
@@ -159,6 +173,7 @@ fn test_planet_available_eng_cell_resp() {
 
 #[test]
 fn test_planet_sunray_ack() {
+    setup_logger();
     let harness = common::TestHarness::setup();
     harness.start();
 
@@ -167,8 +182,9 @@ fn test_planet_sunray_ack() {
         .send(OrchestratorToPlanet::Sunray(Sunray::default()))
         .expect("Failed to send sunray message");
 
-    match harness.recv_pto_with_timeout() {
-        PlanetToOrchestrator::SunrayAck { planet_id: 0 } => {}
+    let result = harness.recv_pto_with_timeout();
+    match result {
+        PlanetToOrchestrator::SunrayAck { .. } => {}
         _other => panic!("Wrong response received"),
     }
 
@@ -178,6 +194,7 @@ fn test_planet_sunray_ack() {
 
 #[test]
 fn test_planet_asteroid_ack() {
+    setup_logger();
     let harness = common::TestHarness::setup();
     harness.start();
 
@@ -188,7 +205,7 @@ fn test_planet_asteroid_ack() {
 
     match harness.recv_pto_with_timeout() {
         PlanetToOrchestrator::AsteroidAck {
-            destroyed: true,
+            rocket: None,
             planet_id: 0,
         } => {}
         _other => panic!("Wrong response received"),
@@ -200,6 +217,7 @@ fn test_planet_asteroid_ack() {
 
 #[test]
 fn test_planet_survive_asteroid() {
+    setup_logger();
     let harness = common::TestHarness::setup();
     harness.start();
 
@@ -220,7 +238,7 @@ fn test_planet_survive_asteroid() {
 
     match harness.recv_pto_with_timeout() {
         PlanetToOrchestrator::AsteroidAck {
-            destroyed: false,
+            rocket: Some(_),
             planet_id: 0,
         } => {}
         _other => panic!("Wrong response received"),
@@ -232,6 +250,7 @@ fn test_planet_survive_asteroid() {
 
 #[test]
 fn test_planet_internal_state_resp() {
+    setup_logger();
     let harness = common::TestHarness::setup();
     harness.start();
 
@@ -251,9 +270,10 @@ fn test_planet_internal_state_resp() {
 
 #[test]
 fn test_planet_incoming_expl_resp() {
+    setup_logger();
     let harness = common::TestHarness::setup();
     harness.start();
-    let (expl_tx, _expl_rx) = mpsc::channel();
+    let (expl_tx, _expl_rx) = crossbeam_channel::unbounded();
 
     harness
         .orch_tx
@@ -264,10 +284,7 @@ fn test_planet_incoming_expl_resp() {
         .expect("Failed to send asteroid message");
 
     match harness.recv_pto_with_timeout() {
-        PlanetToOrchestrator::IncomingExplorerResponse {
-            planet_id: 0,
-            res: Ok(()),
-        } => {}
+        PlanetToOrchestrator::IncomingExplorerResponse { planet_id: 0, .. } => {}
         _other => panic!("Wrong response received"),
     }
 
@@ -277,6 +294,7 @@ fn test_planet_incoming_expl_resp() {
 
 #[test]
 fn test_planet_outgoing_expl_resp() {
+    setup_logger();
     let harness = common::TestHarness::setup();
     harness.start();
 

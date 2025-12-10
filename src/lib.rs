@@ -3,7 +3,7 @@ use common_game::components::resource::BasicResourceType;
 use common_game::protocols::messages::{
     ExplorerToPlanet, OrchestratorToPlanet, PlanetToOrchestrator,
 };
-use std::sync::mpsc;
+use log::{debug, error, info};
 
 mod ai;
 
@@ -22,27 +22,22 @@ use crate::ai::AI;
 /// Specific error messages indicate which channel failed.
 pub fn trip(
     id: u32,
-    orch_to_planet: mpsc::Receiver<OrchestratorToPlanet>,
-    planet_to_orch: mpsc::Sender<PlanetToOrchestrator>,
-    expl_to_planet: mpsc::Receiver<ExplorerToPlanet>,
+    orch_to_planet: crossbeam_channel::Receiver<OrchestratorToPlanet>,
+    planet_to_orch: crossbeam_channel::Sender<PlanetToOrchestrator>,
+    expl_to_planet: crossbeam_channel::Receiver<ExplorerToPlanet>,
 ) -> Result<Planet, String> {
     match orch_to_planet.try_recv() {
-        Err(mpsc::TryRecvError::Disconnected) => {
+        Err(crossbeam_channel::TryRecvError::Disconnected) => {
+            error!("OrchestratorToPlanet channel is closed for planet {id}");
             return Err("OrchestratorToPlanet Channel is closed".to_string());
         }
-        Err(mpsc::TryRecvError::Empty) => {
-            println!("OrchestratorToPlanet channel is open but empty");
-        }
-        Ok(_) => println!("OrchestratorToPlanet channel open"),
+        _ => debug!("ExplorerToPlanet channel open for planet {id}"),
     }
     match expl_to_planet.try_recv() {
-        Err(mpsc::TryRecvError::Disconnected) => {
+        Err(crossbeam_channel::TryRecvError::Disconnected) => {
             return Err("ExplorerToPlanet channel is closed".to_string());
         }
-        Err(mpsc::TryRecvError::Empty) => {
-            println!("ExplorerToPlanet channel is open but empty");
-        }
-        Ok(_) => println!("ExplorerToPlanet channel open"),
+        _ => debug!("ExplorerToPlanet channel open for planet {id}"),
     }
     let planet = Planet::new(
         id,
@@ -54,6 +49,8 @@ pub fn trip(
         (orch_to_planet, planet_to_orch),
         expl_to_planet,
     )?;
+
+    info!("Planet {id} initialized successfully");
     Ok(planet)
 }
 /*
@@ -79,25 +76,25 @@ impl Trip {
     /// Specific error messages indicate which channel failed.
     pub fn new(
         id: u32,
-        orch_to_planet: mpsc::Receiver<OrchestratorToPlanet>,
-        planet_to_orch: mpsc::Sender<PlanetToOrchestrator>,
-        expl_to_planet: mpsc::Receiver<ExplorerToPlanet>,
-        planet_to_expl: mpsc::Sender<PlanetToExplorer>,
+        orch_to_planet: crossbeam_channel::Receiver<OrchestratorToPlanet>,
+        planet_to_orch: crossbeam_channel::Sender<PlanetToOrchestrator>,
+        expl_to_planet: crossbeam_channel::Receiver<ExplorerToPlanet>,
+        planet_to_expl: crossbeam_channel::Sender<PlanetToExplorer>,
     ) -> Result<Self, String> {
         match orch_to_planet.try_recv() {
-            Err(mpsc::TryRecvError::Disconnected) => {
+            Err(crossbeam_channel::TryRecvError::Disconnected) => {
                 return Err("OrchestratorToPlanet Channel is closed".to_string());
             }
-            Err(mpsc::TryRecvError::Empty) => {
+            Err(crossbeam_channel::TryRecvError::Empty) => {
                 println!("OrchestratorToPlanet channel is open but empty");
             }
             Ok(_) => println!("OrchestratorToPlanet channel open"),
         }
         match expl_to_planet.try_recv() {
-            Err(mpsc::TryRecvError::Disconnected) => {
+            Err(crossbeam_channel::TryRecvError::Disconnected) => {
                 return Err("ExplorerToPlanet channel is closed".to_string());
             }
-            Err(mpsc::TryRecvError::Empty) => {
+            Err(crossbeam_channel::TryRecvError::Empty) => {
                 println!("ExplorerToPlanet channel is open but empty");
             }
             Ok(_) => println!("ExplorerToPlanet channel open"),
@@ -128,13 +125,22 @@ impl Trip {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::mpsc;
+    use std::sync::Once;
+
+    static INIT: Once = Once::new();
+
+    fn setup_logger() {
+        INIT.call_once(|| {
+            env_logger::builder().is_test(true).init();
+        });
+    }
 
     #[test]
     fn test_planet_creation() {
-        let (_orch_tx, orch_rx) = mpsc::channel();
-        let (planet_tx, _planet_rx) = mpsc::channel();
-        let (_expl_tx, expl_rx) = mpsc::channel();
+        setup_logger();
+        let (_orch_tx, orch_rx) = crossbeam_channel::unbounded();
+        let (planet_tx, _planet_rx) = crossbeam_channel::unbounded();
+        let (_expl_tx, expl_rx) = crossbeam_channel::unbounded();
 
         let trip = trip(0, orch_rx, planet_tx, expl_rx);
         assert!(trip.is_ok());
@@ -142,9 +148,10 @@ mod tests {
 
     #[test]
     fn test_planet_new_with_closed_channels() {
-        let (orch_tx, orch_rx) = mpsc::channel();
-        let (planet_tx, _planet_rx) = mpsc::channel();
-        let (expl_tx, expl_rx) = mpsc::channel();
+        setup_logger();
+        let (orch_tx, orch_rx) = crossbeam_channel::unbounded();
+        let (planet_tx, _planet_rx) = crossbeam_channel::unbounded();
+        let (expl_tx, expl_rx) = crossbeam_channel::unbounded();
 
         // Close channels by dropping senders
         drop(orch_tx);

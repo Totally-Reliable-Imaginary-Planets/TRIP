@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["asteroid","energy_cell","generator","planet","resource","rocket","sunray"]};
+window.SIDEBAR_ITEMS = {"mod":["asteroid","energy_cell","forge","planet","resource","rocket","sunray"]};

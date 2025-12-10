@@ -1,6 +1,9 @@
 use common_game::components::energy_cell::EnergyCell;
 use common_game::components::planet::{PlanetAI, PlanetState};
-use common_game::components::resource::{BasicResourceType, Combinator, Generator};
+use common_game::components::resource::ComplexResourceRequest;
+use common_game::components::resource::{
+    BasicResource, BasicResourceType, Combinator, ComplexResource, Generator, GenericResource,
+};
 use common_game::components::rocket::Rocket;
 use common_game::protocols::messages::PlanetToOrchestrator::InternalStateResponse;
 use common_game::protocols::messages::PlanetToOrchestrator::SunrayAck;
@@ -11,32 +14,69 @@ use log::{debug, error, info, warn};
 
 /// The AI implementation for our planet
 pub(crate) struct AI {
-    is_stopped: bool,
+    running: bool,
 }
 
 impl AI {
     pub(crate) fn new() -> Self {
-        Self { is_stopped: true }
+        Self { running: false }
+    }
+
+    fn is_running(&self, planet_id: u32) -> bool {
+        if !self.running {
+            debug!("planet_id={planet_id} msg_ignored: ai_stopped");
+            return false;
+        }
+        true
+    }
+
+    fn get_generic_resources(msg: ComplexResourceRequest) -> (GenericResource, GenericResource) {
+        match msg {
+            ComplexResourceRequest::Water(h, o) => (
+                GenericResource::BasicResources(BasicResource::Hydrogen(h)),
+                GenericResource::BasicResources(BasicResource::Oxygen(o)),
+            ),
+            ComplexResourceRequest::Diamond(c1, c2) => (
+                GenericResource::BasicResources(BasicResource::Carbon(c1)),
+                GenericResource::BasicResources(BasicResource::Carbon(c2)),
+            ),
+            ComplexResourceRequest::Life(w, c) => (
+                GenericResource::ComplexResources(ComplexResource::Water(w)),
+                GenericResource::BasicResources(BasicResource::Carbon(c)),
+            ),
+            ComplexResourceRequest::Robot(s, l) => (
+                GenericResource::BasicResources(BasicResource::Silicon(s)),
+                GenericResource::ComplexResources(ComplexResource::Life(l)),
+            ),
+            ComplexResourceRequest::Dolphin(w, l) => (
+                GenericResource::ComplexResources(ComplexResource::Water(w)),
+                GenericResource::ComplexResources(ComplexResource::Life(l)),
+            ),
+            ComplexResourceRequest::AIPartner(r, d) => (
+                GenericResource::ComplexResources(ComplexResource::Robot(r)),
+                GenericResource::ComplexResources(ComplexResource::Diamond(d)),
+            ),
+        }
     }
 }
 
 impl PlanetAI for AI {
     /// Called when the planet starts.
     fn start(&mut self, state: &PlanetState) {
-        self.is_stopped = false;
-        debug!("Planet AI started for planet {}", state.id());
+        self.running = true;
+        info!("planet_id={} ai_started", state.id());
     }
 
     /// Called when the planet stops.
     fn stop(&mut self, state: &PlanetState) {
-        self.is_stopped = true;
-        debug!("Planet AI stopped for planet {}", state.id());
+        self.running = false;
+        info!("planet_id={} ai_stopped", state.id());
     }
 
     /// Handles a message from the orchestrator.
     ///
     /// This method processes incoming messages from the orchestrator when the planet is active.
-    /// If the planet is stopped (`self.is_stopped`), no messages are processed and `None` is returned immediately.
+    /// If the planet is stopped (`self.running`), no messages are processed and `None` is returned immediately.
     ///
     /// # Behavior by Message Type
     ///
@@ -75,32 +115,31 @@ impl PlanetAI for AI {
         _: &Combinator,
         msg: OrchestratorToPlanet,
     ) -> Option<PlanetToOrchestrator> {
-        if self.is_stopped {
-            debug!(
-                "Message received while planet {} stopped, ignoring",
-                state.id()
-            );
+        if !self.is_running(state.id()) {
             return None;
         }
         match msg {
             OrchestratorToPlanet::Sunray(s) => {
+                debug!("planet_id={} incoming_sunray", state.id());
                 if let Some(index) = state.cells_iter().position(|cell| !cell.is_charged()) {
                     let cell = state.cell_mut(index);
                     cell.charge(s);
+                    debug!("planet_id={} sunray: charging cell", state.id());
                     match state.build_rocket(index) {
-                        Ok(()) => info!("Rocket built successfully on planet {}", state.id()),
-                        Err(e) => error!("Rocket Failed to build on planet {}: {e}", state.id()),
+                        Ok(()) => info!("planet_id={} rocket_built", state.id()),
+                        Err(e) => error!("planet_id={} rocket_build_failed: {}", state.id(), e),
                     }
                 } else {
-                    warn!("No uncharged cell available on planet {}", state.id());
+                    warn!("planet_id={} sunray: no_uncharged_cells", state.id());
                 }
-                debug!("Sending SunrayAck for planet {}", state.id());
+                debug!("planet_id={} outgoing_sunray_ack", state.id());
                 Some(SunrayAck {
                     planet_id: state.id(),
                 })
             }
             OrchestratorToPlanet::InternalStateRequest => {
-                debug!("Sending InternalStateResponse for planet {}", state.id());
+                info!("planet_id={} outgoing_internal_state_response", state.id());
+
                 Some(InternalStateResponse {
                     planet_id: state.id(),
                     planet_state: state.to_dummy(),
@@ -122,7 +161,7 @@ impl PlanetAI for AI {
     ///
     /// # Parameters
     ///
-    /// * `self`: Mutable reference to the planet's controller or handler, which includes runtime state like `is_stopped`.
+    /// * `self`: Mutable reference to the planet's controller or handler, which includes runtime state like `running`.
     /// * `state`: Mutable reference to the current `PlanetState`, providing access to data like energy cells, resources, etc.
     /// * `generator`: reference for `Generator`.
     /// * `comb`: reference for `Combinator`.
@@ -157,17 +196,13 @@ impl PlanetAI for AI {
         comb: &Combinator,
         msg: ExplorerToPlanet,
     ) -> Option<PlanetToExplorer> {
-        if self.is_stopped {
-            debug!(
-                "Message received while planet {} stopped, ignoring",
-                state.id()
-            );
+        if !self.is_running(state.id()) {
             return None;
         }
         match msg {
             ExplorerToPlanet::SupportedResourceRequest { explorer_id } => {
                 debug!(
-                    "Sending SupportedResourceResponse for planet {} to explorer {}",
+                    "planet_id={} explorer_id={} outgoing_supported_resource_response",
                     state.id(),
                     explorer_id
                 );
@@ -184,7 +219,7 @@ impl PlanetAI for AI {
                 .and_then(|index| generator.make_oxygen(state.cell_mut(index)).ok())
                 .map(|r| {
                     debug!(
-                        "Sending GenerateResourceResponse for planet {} to explorer {}",
+                        "planet_id={} explorer_id={} generate_oxygen: success",
                         state.id(),
                         explorer_id
                     );
@@ -194,20 +229,23 @@ impl PlanetAI for AI {
                 })
                 .or_else(|| {
                     warn!(
-                        "Failed to generate resource Oxygen from planet {}",
-                        state.id()
+                        "planet_id={} explorer_id={} generate_oxygen: failed",
+                        state.id(),
+                        explorer_id
                     );
                     None
                 }),
             ExplorerToPlanet::GenerateResourceRequest { explorer_id, .. } => {
                 debug!(
-                    "Responding None cause the resource requested from explorer {explorer_id} is not supported",
+                    "planet_id={} explorer_id={} generate_resource: unsupported",
+                    state.id(),
+                    explorer_id
                 );
                 None
             }
             ExplorerToPlanet::SupportedCombinationRequest { explorer_id, .. } => {
                 debug!(
-                    "Sending SupportedCombinationResponse for planet {} to explorer {}",
+                    "planet_id={} explorer_id={} outgoing_supported_combination_response",
                     state.id(),
                     explorer_id
                 );
@@ -215,19 +253,31 @@ impl PlanetAI for AI {
                     combination_list: comb.all_available_recipes(),
                 })
             }
-            ExplorerToPlanet::CombineResourceRequest { .. } => {
-                /*Some(PlanetToExplorer::CombineResourceResponse {
-                    complex_response: None,
-                })*/
-                None
+            ExplorerToPlanet::CombineResourceRequest { explorer_id, msg } => {
+                debug!(
+                    "planet_id={} explorer_id={} incoming_combine_request: {:?}",
+                    state.id(),
+                    explorer_id,
+                    msg
+                );
+                let (left, right) = AI::get_generic_resources(msg);
+                debug!(
+                    "planet_id={} explorer_id={} outgoing_combine_response=unsupported_combination",
+                    state.id(),
+                    explorer_id
+                );
+                Some(PlanetToExplorer::CombineResourceResponse {
+                    complex_response: Err(("unsupported_combination".to_string(), left, right)),
+                })
             }
             ExplorerToPlanet::AvailableEnergyCellRequest { explorer_id } => {
                 let tmp = state.cells_iter().filter(|&cell| cell.is_charged()).count();
                 let count = tmp.try_into().unwrap_or_default();
                 debug!(
-                    "Sending AvailableEnergyCellResponse for planet {} to explorer {}",
+                    "planet_id={} explorer_id={} outgoing_energy_cell_count={}",
                     state.id(),
-                    explorer_id
+                    explorer_id,
+                    count
                 );
                 Some(PlanetToExplorer::AvailableEnergyCellResponse {
                     available_cells: count,
@@ -262,24 +312,34 @@ impl PlanetAI for AI {
         _: &Generator,
         _: &Combinator,
     ) -> Option<Rocket> {
+        if !self.is_running(state.id()) {
+            return None;
+        }
         if state.has_rocket() {
-            debug!("Launching existing rocket from planet {}", state.id());
+            info!(
+                "planet_id={} asteroid_event: existing_rocket_launched",
+                state.id()
+            );
             return state.take_rocket();
         }
         if let Some(index) = state.cells_iter().position(EnergyCell::is_charged) {
             match state.build_rocket(index) {
                 Ok(()) => {
                     info!(
-                        "Rocket built successfully on planet {} during asteroid event",
+                        "planet_id={} asteroid_event: rocket_built_and_launched",
                         state.id()
                     );
                     return state.take_rocket();
                 }
-                Err(e) => error!("Rocket failed to build on planet {}: {e}", state.id()),
+                Err(e) => error!(
+                    "planet_id={} asteroid_event: rocket_build_failed {}",
+                    state.id(),
+                    e
+                ),
             }
         } else {
             warn!(
-                "No charged cells available to build rocket on planet {} during asteroid event",
+                "planet_id={} asteroid_event: no_charged_cells_available",
                 state.id()
             );
         }
@@ -298,7 +358,7 @@ mod tests {
     #[test]
     fn test_ai_initial_state() {
         let ai = AI::new();
-        assert!(ai.is_stopped, "AI should start in stopped state");
+        assert!(!ai.running, "AI should start in stopped state");
     }
 
     // Waiting for PlanetState to implement Default trait
@@ -307,7 +367,7 @@ mod tests {
         let mut ai = AI::new();
         let state = PlanetState::default();
         ai.start(&state);
-        assert!(!ai.is_stopped, "AI should be running after start()");
+        assert!(!ai.running, "AI should be running after start()");
     }
 
     #[test]
@@ -316,10 +376,10 @@ mod tests {
         let state = PlanetState::default();
 
         ai.start(&state); // Start first
-        assert!(!ai.is_stopped);
+        assert!(!ai.running);
 
         ai.stop(&state);
-        assert!(ai.is_stopped, "AI should be stopped after stop()");
+        assert!(ai.running, "AI should be stopped after stop()");
     }
 
     #[test]

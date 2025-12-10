@@ -3,6 +3,7 @@ use common_game::components::resource::BasicResourceType;
 use common_game::protocols::messages::{
     ExplorerToPlanet, OrchestratorToPlanet, PlanetToOrchestrator,
 };
+use log::{debug, error, info};
 
 mod ai;
 
@@ -27,21 +28,16 @@ pub fn trip(
 ) -> Result<Planet, String> {
     match orch_to_planet.try_recv() {
         Err(crossbeam_channel::TryRecvError::Disconnected) => {
+            error!("OrchestratorToPlanet channel is closed for planet {id}");
             return Err("OrchestratorToPlanet Channel is closed".to_string());
         }
-        Err(crossbeam_channel::TryRecvError::Empty) => {
-            println!("OrchestratorToPlanet channel is open but empty");
-        }
-        Ok(_) => println!("OrchestratorToPlanet channel open"),
+        _ => debug!("ExplorerToPlanet channel open for planet {id}"),
     }
     match expl_to_planet.try_recv() {
         Err(crossbeam_channel::TryRecvError::Disconnected) => {
             return Err("ExplorerToPlanet channel is closed".to_string());
         }
-        Err(crossbeam_channel::TryRecvError::Empty) => {
-            println!("ExplorerToPlanet channel is open but empty");
-        }
-        Ok(_) => println!("ExplorerToPlanet channel open"),
+        _ => debug!("ExplorerToPlanet channel open for planet {id}"),
     }
     let planet = Planet::new(
         id,
@@ -53,6 +49,8 @@ pub fn trip(
         (orch_to_planet, planet_to_orch),
         expl_to_planet,
     )?;
+
+    info!("Planet {id} initialized successfully");
     Ok(planet)
 }
 /*
@@ -127,9 +125,19 @@ impl Trip {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Once;
+
+    static INIT: Once = Once::new();
+
+    fn setup_logger() {
+        INIT.call_once(|| {
+            env_logger::builder().is_test(true).init();
+        });
+    }
 
     #[test]
     fn test_planet_creation() {
+        setup_logger();
         let (_orch_tx, orch_rx) = crossbeam_channel::unbounded();
         let (planet_tx, _planet_rx) = crossbeam_channel::unbounded();
         let (_expl_tx, expl_rx) = crossbeam_channel::unbounded();
@@ -140,6 +148,7 @@ mod tests {
 
     #[test]
     fn test_planet_new_with_closed_channels() {
+        setup_logger();
         let (orch_tx, orch_rx) = crossbeam_channel::unbounded();
         let (planet_tx, _planet_rx) = crossbeam_channel::unbounded();
         let (expl_tx, expl_rx) = crossbeam_channel::unbounded();

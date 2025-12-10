@@ -1,13 +1,13 @@
 use common_game::components::energy_cell::EnergyCell;
 use common_game::components::planet::{PlanetAI, PlanetState};
-use common_game::components::resource::BasicResourceType;
-use common_game::components::resource::{Combinator, Generator};
+use common_game::components::resource::{BasicResourceType, Combinator, Generator};
 use common_game::components::rocket::Rocket;
 use common_game::protocols::messages::PlanetToOrchestrator::InternalStateResponse;
 use common_game::protocols::messages::PlanetToOrchestrator::SunrayAck;
 use common_game::protocols::messages::{
     ExplorerToPlanet, OrchestratorToPlanet, PlanetToExplorer, PlanetToOrchestrator,
 };
+use log::{debug, error, info, warn};
 
 /// The AI implementation for our planet
 pub(crate) struct AI {
@@ -22,13 +22,15 @@ impl AI {
 
 impl PlanetAI for AI {
     /// Called when the planet starts.
-    fn start(&mut self, _: &PlanetState) {
+    fn start(&mut self, state: &PlanetState) {
         self.is_stopped = false;
+        debug!("Planet AI started for planet {}", state.id());
     }
 
     /// Called when the planet stops.
-    fn stop(&mut self, _: &PlanetState) {
+    fn stop(&mut self, state: &PlanetState) {
         self.is_stopped = true;
+        debug!("Planet AI stopped for planet {}", state.id());
     }
 
     /// Handles a message from the orchestrator.
@@ -74,6 +76,10 @@ impl PlanetAI for AI {
         msg: OrchestratorToPlanet,
     ) -> Option<PlanetToOrchestrator> {
         if self.is_stopped {
+            debug!(
+                "Message received while planet {} stopped, ignoring",
+                state.id()
+            );
             return None;
         }
         match msg {
@@ -82,19 +88,24 @@ impl PlanetAI for AI {
                     let cell = state.cell_mut(index);
                     cell.charge(s);
                     match state.build_rocket(index) {
-                        Ok(()) => println!("Rocket built successfully"),
-                        Err(e) => println!("Rocekt Failed to be built: {e}"),
+                        Ok(()) => info!("Rocket built successfully on planet {}", state.id()),
+                        Err(e) => error!("Rocket Failed to build on planet {}: {e}", state.id()),
                     }
+                } else {
+                    warn!("No uncharged cell available on planet {}", state.id());
                 }
-                println!("Planet id: {}", state.id());
+                debug!("Sending SunrayAck for planet {}", state.id());
                 Some(SunrayAck {
                     planet_id: state.id(),
                 })
             }
-            OrchestratorToPlanet::InternalStateRequest => Some(InternalStateResponse {
-                planet_id: state.id(),
-                planet_state: state.to_dummy(),
-            }),
+            OrchestratorToPlanet::InternalStateRequest => {
+                debug!("Sending InternalStateResponse for planet {}", state.id());
+                Some(InternalStateResponse {
+                    planet_id: state.id(),
+                    planet_state: state.to_dummy(),
+                })
+            }
             OrchestratorToPlanet::KillPlanet
             | OrchestratorToPlanet::OutgoingExplorerRequest { .. }
             | OrchestratorToPlanet::IncomingExplorerRequest { .. }
@@ -147,29 +158,59 @@ impl PlanetAI for AI {
         msg: ExplorerToPlanet,
     ) -> Option<PlanetToExplorer> {
         if self.is_stopped {
+            debug!(
+                "Message received while planet {} stopped, ignoring",
+                state.id()
+            );
             return None;
         }
         match msg {
-            ExplorerToPlanet::SupportedResourceRequest { explorer_id: _ } => {
+            ExplorerToPlanet::SupportedResourceRequest { explorer_id } => {
+                debug!(
+                    "Sending SupportedResourceResponse for planet {} to explorer {}",
+                    state.id(),
+                    explorer_id
+                );
                 Some(PlanetToExplorer::SupportedResourceResponse {
                     resource_list: generator.all_available_recipes(),
                 })
             }
             ExplorerToPlanet::GenerateResourceRequest {
-                explorer_id: _,
+                explorer_id,
                 resource: BasicResourceType::Oxygen,
             } => state
                 .cells_iter()
                 .position(EnergyCell::is_charged)
                 .and_then(|index| generator.make_oxygen(state.cell_mut(index)).ok())
                 .map(|r| {
-                    println!("Resource generated");
+                    debug!(
+                        "Sending GenerateResourceResponse for planet {} to explorer {}",
+                        state.id(),
+                        explorer_id
+                    );
                     PlanetToExplorer::GenerateResourceResponse {
                         resource: Some(common_game::components::resource::BasicResource::Oxygen(r)),
                     }
+                })
+                .or_else(|| {
+                    warn!(
+                        "Failed to generate resource Oxygen from planet {}",
+                        state.id()
+                    );
+                    None
                 }),
-            ExplorerToPlanet::GenerateResourceRequest { .. } => None,
-            ExplorerToPlanet::SupportedCombinationRequest { .. } => {
+            ExplorerToPlanet::GenerateResourceRequest { explorer_id, .. } => {
+                debug!(
+                    "Responding None cause the resource requested from explorer {explorer_id} is not supported",
+                );
+                None
+            }
+            ExplorerToPlanet::SupportedCombinationRequest { explorer_id, .. } => {
+                debug!(
+                    "Sending SupportedCombinationResponse for planet {} to explorer {}",
+                    state.id(),
+                    explorer_id
+                );
                 Some(PlanetToExplorer::SupportedCombinationResponse {
                     combination_list: comb.all_available_recipes(),
                 })
@@ -180,9 +221,14 @@ impl PlanetAI for AI {
                 })*/
                 None
             }
-            ExplorerToPlanet::AvailableEnergyCellRequest { .. } => {
+            ExplorerToPlanet::AvailableEnergyCellRequest { explorer_id } => {
                 let tmp = state.cells_iter().filter(|&cell| cell.is_charged()).count();
                 let count = tmp.try_into().unwrap_or_default();
+                debug!(
+                    "Sending AvailableEnergyCellResponse for planet {} to explorer {}",
+                    state.id(),
+                    explorer_id
+                );
                 Some(PlanetToExplorer::AvailableEnergyCellResponse {
                     available_cells: count,
                 })
@@ -217,16 +263,25 @@ impl PlanetAI for AI {
         _: &Combinator,
     ) -> Option<Rocket> {
         if state.has_rocket() {
+            debug!("Launching existing rocket from planet {}", state.id());
             return state.take_rocket();
         }
         if let Some(index) = state.cells_iter().position(EnergyCell::is_charged) {
             match state.build_rocket(index) {
                 Ok(()) => {
-                    println!("Rocket built successfully");
+                    info!(
+                        "Rocket built successfully on planet {} during asteroid event",
+                        state.id()
+                    );
                     return state.take_rocket();
                 }
-                Err(e) => println!("Rocekt Failed to be built: {e}"),
+                Err(e) => error!("Rocket failed to build on planet {}: {e}", state.id()),
             }
+        } else {
+            warn!(
+                "No charged cells available to build rocket on planet {} during asteroid event",
+                state.id()
+            );
         }
         None
     }

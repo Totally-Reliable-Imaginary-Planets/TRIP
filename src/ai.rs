@@ -1,3 +1,79 @@
+//! AI logic for our Planet implementation.
+//!
+//! This module defines the [`AI`] struct, which implements the [`PlanetAI`]
+//! trait from `common_game`. The AI controls how our planet reacts to
+//! orchestrator messages, explorer requests, and asteroid events.
+//!
+//! # Overview
+//!
+//! The AI manages three major responsibilities:
+//!
+//! 1. **Lifecycle control** via `start()` and `stop()`.
+//!    - When stopped, the AI rejects all messages and produces no output.
+//! 2. **Message handling**
+//!    - [`handle_orchestrator_msg`] processes messages from the orchestrator,
+//!      including sunrays, internal state requests, and others.
+//!    - [`handle_explorer_msg`] processes queries and requests from explorers
+//!      related to energy, basic resources, supported combinations, and complex
+//!      combinations.
+//! 3. **Asteroid response logic**
+//!    - [`handle_asteroid`] launches an existing rocket or attempts to build
+//!      and launch a new one.
+//!
+//! # AI Runtime Model
+//!
+//! The AI maintains an internal `running: bool` flag.
+//! - When `running == false`, the planet is considered inactive and **all
+//!   incoming messages are ignored**.
+//! - The orchestrator controls this state via `StartPlanetAI` and
+//!   `StopPlanetAI` messages.
+//!
+//! The planet never blocks inside the AI; blocking occurs only in the
+//! outer planet loop that receives messages from channels.
+//!
+//! # Supported Features
+//!
+//! The AI supports:
+//! - **Sunray absorption and energy cell charging**
+//! - **Rocket construction via charged cells**
+//! - **Internal state reporting**
+//! - **Basic resource handling for Oxygen**
+//! - **Fallback error reporting for unsupported combinations**
+//! - **Asteroid-triggered rocket launching**
+//!
+//! # Unsupported Features (as of current version)
+//!
+//! The following message types are acknowledged but **not implemented** and
+//! return `None` (or panic if explicitly marked with `todo!()` in the code):
+//!
+//! - Incoming and outgoing explorer routing requests
+//! - Complex resource generation beyond the Oxygen path
+//! - Planet kill event (currently ignored; real implementation should finalize
+//!   the planet's lifecycle)
+//!
+//! # Thread Safety and Side Effects
+//!
+//! - The AI mutates [`PlanetState`] extensively (charging cells, building and
+//!   launching rockets, creating resources).
+//! - Logging is performed using the `log` crate.
+//! - No global state is modified, and the struct is `Send` + `Sync` via its
+//!   field structure.
+//!
+//! # Protocol Guarantees
+//!
+//! This implementation respects the project protocol by:
+//! - Never reading from channels directly.
+//! - Producing a response only when required.
+//! - Logging all relevant state transitions.
+//! - Maintaining deterministic behavior (no randomness here).
+//!
+//! # See Also
+//!
+//! - [`PlanetState`]
+//! - [`Generator`]
+//! - [`Combinator`]
+//! - [`PlanetAI` trait](common_game::components::planet::PlanetAI)
+
 use common_game::components::energy_cell::EnergyCell;
 use common_game::components::planet::{PlanetAI, PlanetState};
 use common_game::components::resource::ComplexResourceRequest;
@@ -5,6 +81,7 @@ use common_game::components::resource::{
     BasicResource, BasicResourceType, Combinator, ComplexResource, Generator, GenericResource,
 };
 use common_game::components::rocket::Rocket;
+use common_game::components::sunray::Sunray;
 use common_game::protocols::messages::PlanetToOrchestrator::InternalStateResponse;
 use common_game::protocols::messages::PlanetToOrchestrator::SunrayAck;
 use common_game::protocols::messages::{
@@ -12,16 +89,36 @@ use common_game::protocols::messages::{
 };
 use log::{debug, error, info, warn};
 
-/// The AI implementation for our planet
+/// AI implementation for our planet.
+///
+/// This AI governs message handling, lifecycle control, energy management,
+/// rocket building, resource generation, and asteroid defense.
+///
+/// See the module-level documentation for full details.
 pub(crate) struct AI {
     running: bool,
 }
 
 impl AI {
+    /// Creates a new, inactive [`AI`] instance.
+    ///
+    /// The AI begins in the `running = false` state, meaning no incoming
+    /// messages will be processed until [`start`](PlanetAI::start) is called.
     pub(crate) fn new() -> Self {
         Self { running: false }
     }
 
+    /// Returns `true` if the AI is currently active, otherwise logs that the
+    /// AI ignored a message due to being stopped and returns `false`.
+    ///
+    /// # Parameters
+    /// - `planet_id`: The ID of the planet for contextual logging.
+    ///
+    /// # Returns
+    /// `true` if `running == true`, `false` otherwise.
+    ///
+    /// # Side Effects
+    /// - Writes a debug log message when inactive.
     fn is_running(&self, planet_id: u32) -> bool {
         if !self.running {
             debug!("planet_id={planet_id} msg_ignored: ai_stopped");
@@ -30,6 +127,15 @@ impl AI {
         true
     }
 
+    /// Transforms a [`ComplexResourceRequest`] into a pair of [`GenericResource`]
+    /// values suitable for error reporting or unsupported-combination responses.
+    ///
+    /// This function does not validate whether the combination is allowed on
+    /// this planet; it only decomposes the request into its constituent parts.
+    ///
+    /// # Returns
+    /// A pair `(left, right)` representing the two logical inputs to a
+    /// combination request.
     fn get_generic_resources(msg: ComplexResourceRequest) -> (GenericResource, GenericResource) {
         match msg {
             ComplexResourceRequest::Water(h, o) => (
@@ -58,56 +164,92 @@ impl AI {
             ),
         }
     }
+
+    /// Handles a [`Sunray`] by charging the first uncharged energy cell and
+    /// attempting to build a rocket on that cell.
+    ///
+    /// This method encapsulates the sunray-handling logic used by
+    /// [`handle_orchestrator_msg`](PlanetAI::handle_orchestrator_msg).
+    ///
+    /// # Behavior
+    /// - Charges the first available uncharged cell.
+    /// - Attempts to build a rocket on that cell; logs success or failure.
+    /// - Logs relevant diagnostic information.
+    ///
+    /// # Side Effects
+    /// - Mutates the [`PlanetState`] (cell charge, rocket construction).
+    /// - Emits debug, info, or error logs.
+    fn handle_sunray(state: &mut PlanetState, s: Sunray) {
+        debug!("planet_id={} incoming_sunray", state.id());
+        if let Some(index) = state.cells_iter().position(|cell| !cell.is_charged()) {
+            let cell = state.cell_mut(index);
+            cell.charge(s);
+            debug!("planet_id={} sunray: charging cell", state.id());
+            match state.build_rocket(index) {
+                Ok(()) => info!("planet_id={} rocket_built", state.id()),
+                Err(e) => error!("planet_id={} rocket_build_failed: {}", state.id(), e),
+            }
+        } else {
+            warn!("planet_id={} sunray: no_uncharged_cells", state.id());
+        }
+        debug!("planet_id={} outgoing_sunray_ack", state.id());
+    }
 }
 
 impl PlanetAI for AI {
-    /// Called when the planet starts.
+    /// Activates the AI and enables message processing.
+    ///
+    /// Called by the planet runtime when initialization completes.
+    /// After this call, incoming messages to the AI will be processed normally.
+    ///
+    /// # Side Effects
+    /// - Sets `running = true`
+    /// - Logs an informational `ai_started` message
     fn start(&mut self, state: &PlanetState) {
         self.running = true;
         info!("planet_id={} ai_started", state.id());
     }
 
-    /// Called when the planet stops.
+    /// Deactivates the AI and stops all message processing.
+    ///
+    /// All message handlers will return `None` until the AI is restarted.
+    ///
+    /// # Side Effects
+    /// - Sets `running = false`
+    /// - Logs an informational `ai_stopped` message
     fn stop(&mut self, state: &PlanetState) {
         self.running = false;
         info!("planet_id={} ai_stopped", state.id());
     }
 
-    /// Handles a message from the orchestrator.
+    /// Handles messages sent by the orchestrator to this planet.
     ///
-    /// This method processes incoming messages from the orchestrator when the planet is active.
-    /// If the planet is stopped (`self.running`), no messages are processed and `None` is returned immediately.
+    /// This is the primary entry point for orchestrator-driven behavior such as:
+    /// - Charging energy cells via sunrays
+    /// - Rocket construction
+    /// - Internal state inspection
     ///
-    /// # Behavior by Message Type
+    /// # Processing Rules
     ///
-    /// - [`OrchestratorToPlanet::Sunray(s)`]:
-    ///   - Finds the first uncharged cell and charges it with the sunray data.
-    ///   - Attempts to build a rocket on that cell.
-    ///   - Always returns a [`SunrayAck`] containing the planet ID.
+    /// - If the AI is stopped, returns `None` immediately.
     ///
-    /// - [`OrchestratorToPlanet::IncomingExplorerRequest`], [`OrchestratorToPlanet::OutgoingExplorerRequest`],
-    ///   [`OrchestratorToPlanet::InternalStateRequest`]:
-    ///   - Marked with `todo!()` — these will panic in release and should be implemented.
+    /// ## Supported:
+    /// - [`OrchestratorToPlanet::Sunray`]:
+    ///     - Charges one cell and attempts rocket construction.
+    ///     - Returns [`PlanetToOrchestrator::SunrayAck`].
     ///
-    /// - [`OrchestratorToPlanet::Asteroid`], [`OrchestratorToPlanet::StartPlanetAI`], [`OrchestratorToPlanet::StopPlanetAI`]:
-    ///   - Silently ignored (`None` returned).
+    /// - [`OrchestratorToPlanet::InternalStateRequest`]:
+    ///     - Returns a snapshot of the planet's public state.
+    ///
+    /// ## Ignored (return `None`), handled externally by the runtime:
+    /// - [`Asteroid`]
+    /// - [`StartPlanetAI`] and [`StopPlanetAI`]
+    /// - [`IncomingExplorerRequest`], [`OutgoingExplorerRequest`]
+    /// - [`KillPlanet`]
     ///
     /// # Returns
-    ///
-    /// - `Some(PlanetToOrchestrator)`: A response is generated.
-    /// - `None`: No response is sent, either because the planet is stopped or the message is ignored.
-    ///
-    /// # Logging
-    ///
-    /// # Panics
-    ///
-    /// Panics if:
-    /// - An unimplemented message variant (`IncomingExplorerRequest`, etc.) is received.
-    ///
-    /// # See Also
-    ///
-    /// - [`PlanetState::build_rocket`]
-    /// - [`SunrayAck`]
+    /// - `Some(response)` if a response is produced.
+    /// - `None` if the AI is stopped or the message is ignored.
     fn handle_orchestrator_msg(
         &mut self,
         state: &mut PlanetState,
@@ -120,19 +262,7 @@ impl PlanetAI for AI {
         }
         match msg {
             OrchestratorToPlanet::Sunray(s) => {
-                debug!("planet_id={} incoming_sunray", state.id());
-                if let Some(index) = state.cells_iter().position(|cell| !cell.is_charged()) {
-                    let cell = state.cell_mut(index);
-                    cell.charge(s);
-                    debug!("planet_id={} sunray: charging cell", state.id());
-                    match state.build_rocket(index) {
-                        Ok(()) => info!("planet_id={} rocket_built", state.id()),
-                        Err(e) => error!("planet_id={} rocket_build_failed: {}", state.id(), e),
-                    }
-                } else {
-                    warn!("planet_id={} sunray: no_uncharged_cells", state.id());
-                }
-                debug!("planet_id={} outgoing_sunray_ack", state.id());
+                AI::handle_sunray(state, s);
                 Some(SunrayAck {
                     planet_id: state.id(),
                 })
@@ -154,41 +284,27 @@ impl PlanetAI for AI {
         }
     }
 
-    /// Handles incoming messages from an `Explorer` agent and generates appropriate responses based on the planet's current state.
+    /// Handles messages from an explorer interacting with this planet.
     ///
-    /// This function processes various types of requests such as resource availability, combination support,
-    /// generation, and energy cell status. If the planet is stopped (shut down or inactive), no responses are sent.
+    /// The AI responds to explorer queries about:
+    /// - Supported basic resources
+    /// - Supported combination rules
+    /// - Energy availability
+    /// - Requests to generate Oxygen
     ///
-    /// # Parameters
+    /// Unsupported combinations or unsupported resource requests result in
+    /// `None` or an appropriate error response.
     ///
-    /// * `self`: Mutable reference to the planet's controller or handler, which includes runtime state like `running`.
-    /// * `state`: Mutable reference to the current `PlanetState`, providing access to data like energy cells, resources, etc.
-    /// * `generator`: reference for `Generator`.
-    /// * `comb`: reference for `Combinator`.
-    /// * `msg`: The incoming message from the explorer, wrapped in the `ExplorerToPlanet` enum.
+    /// # Behavior
+    ///
+    /// - If the AI is stopped, returns `None`.
+    /// - Basic resource generation is supported only for Oxygen.
+    /// - Combination attempts always produce an `Err` payload indicating
+    ///   unsupported functionality.
     ///
     /// # Returns
-    ///
-    /// Returns an `Option<PlanetToExplorer>`:
-    /// - `Some(response)` if a valid response can be generated.
-    /// - `None` if the planet is stopped or the message type is unsupported/not yet implemented.
-    ///
-    /// # Message Handling
-    ///
-    /// Currently supports:
-    /// - `AvailableEnergyCellRequest`: Responds with the count of charged energy cells.
-    /// - `SupportedCombinationRequest`: Respond with the list of available comination recipes so
-    ///   an empty hashset
-    /// - `CombineResourceRequest`: Responde with the complex rescourc this planet can generate so
-    ///   `None`
-    /// - `SupportedResourceRequest`: Responds with the basic resource type hashset containing the
-    ///   only supported resource `Oxygen`
-    /// - `GenerateResourceRequest`: Responds only to request for the `Oxygen` resource althought
-    ///   return `None`
-    ///
-    /// # Panics
-    ///
-    /// Panics if a non-implemented message variant is received.
+    /// - `Some(response)` if a valid response exists.
+    /// - `None` if the AI is stopped or if the request cannot be fulfilled.    
     fn handle_explorer_msg(
         &mut self,
         state: &mut PlanetState,
@@ -286,26 +402,22 @@ impl PlanetAI for AI {
         }
     }
 
-    /// Handles an incoming asteroid event by launching an existing rocket or building a new one.
+    /// Handles an asteroid impact event.
     ///
     /// # Behavior
     ///
-    /// 1. **Launch**: If a rocket is already built (`state.has_rocket()`), it is launched immediately
-    ///    and returned.
-    /// 2. **Build & Launch**: If no rocket exists, the method searches for the first charged energy cell
-    ///    and attempts to build a rocket on it. If successful, the newly built rocket is launched and returned.
-    /// 3. **Failure**: Returns `None` if no rocket was available and construction failed or no charged cell existed.
-    ///
-    /// # Returns
-    ///
-    /// - `Some(Rocket)`: A rocket was successfully launched (either pre-existing or newly built).
-    /// - `None`: No rocket was launched (no rocket present and build failed or no charged cell).
+    /// - If a rocket already exists in the state, it is launched immediately.
+    /// - Otherwise, the AI searches for the first charged energy cell and
+    ///   attempts to build a rocket on it.
+    /// - If rocket construction succeeds, the rocket is launched.
+    /// - If construction fails or no charged cell exists, `None` is returned.
     ///
     /// # Side Effects
+    /// - Mutates the planet state by consuming energy cells and creating rockets.
+    /// - Logs informational or warning messages depending on outcome.
     ///
-    /// - Mutates `state`: may consume a rocket via `take_rocket()` and modify cells during construction.
-    /// - Prints log messages on build success or failure (consider using `log` crate instead of `println!`).
-    ///
+    /// # Returns
+    /// `Some(Rocket)` if a rocket is launched, otherwise `None`.    
     fn handle_asteroid(
         &mut self,
         state: &mut PlanetState,

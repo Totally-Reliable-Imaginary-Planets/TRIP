@@ -9,17 +9,43 @@ mod ai;
 
 use crate::ai::AI;
 
-/// Creates a new Trip instance with the given parameters and initialized planet.
+/// Constructs and returns a fully initialized [`Planet`] instance for our group.
 ///
-/// Attempts to receive initial messages from both the orchestrator and explorer channels
-/// to verify connectivity. Initializes the internal `Planet` with the provided ID,
-/// AI, resource rules, and communication channels.
+/// This function is the public entry point used by other groups' orchestrators
+/// to instantiate our planet.
+///
+/// # Behavior
+///
+/// - Creates a new [`AI`] instance for this planet type.
+/// - Configures the planet with our group's predefined generation and combination rules.
+/// - Initializes the internal [`Planet`] using [`Planet::new`] and returns it.
+///
+/// # Parameters
+///
+/// - `id`: The planet's unique identifier within the galaxy.
+/// - `orch_to_planet`: Receiver for orchestrator-to-planet messages.
+/// - `planet_to_orch`: Sender for planet-to-orchestrator messages.
+/// - `expl_to_planet`: Receiver for explorer-to-planet messages.
+///
+/// # Returns
+///
+/// - `Ok(Planet)` on successful construction.
 ///
 /// # Errors
 ///
-/// Returns an error if either the `orch_to_planet` or `expl_to_planet` channel is disconnected,
-/// indicating that the corresponding sender has been dropped and communication cannot be established.
-/// Specific error messages indicate which channel failed.
+/// - `Err(String)` if [`Planet::new`] fails due to invalid parameters.
+///
+///
+/// # Examples
+///
+/// ```ignore
+/// let planet = trip(id, orch_rx, planet_tx, expl_rx)?;
+/// spawn_planet_thread(planet);
+/// ```
+///
+/// # See Also
+/// - [`Planet::new`]
+/// - [`AI`]
 pub fn trip(
     id: u32,
     orch_to_planet: crossbeam_channel::Receiver<OrchestratorToPlanet>,

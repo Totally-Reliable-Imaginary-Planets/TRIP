@@ -219,13 +219,7 @@ impl PlanetAI for AI {
         info!("planet_id={} ai_stopped", state.id());
     }
 
-    fn handle_sunray(
-        &mut self,
-        state: &mut PlanetState,
-        _: &Generator,
-        _: &Combinator,
-        s: Sunray,
-    ) {
+    fn handle_sunray(&mut self, state: &mut PlanetState, _: &Generator, _: &Combinator, s: Sunray) {
         AI::handle_sunray(state, s);
     }
 

@@ -1,10 +1,10 @@
 use common_game::components::asteroid::Asteroid;
 use common_game::components::sunray::Sunray;
-use common_game::protocols::messages::ExplorerToPlanet;
-use common_game::protocols::messages::OrchestratorToPlanet;
-use common_game::protocols::messages::OrchestratorToPlanet::IncomingExplorerRequest;
-use common_game::protocols::messages::PlanetToExplorer;
-use common_game::protocols::messages::PlanetToOrchestrator;
+use common_game::protocols::orchestrator_planet::OrchestratorToPlanet;
+use common_game::protocols::orchestrator_planet::OrchestratorToPlanet::IncomingExplorerRequest;
+use common_game::protocols::orchestrator_planet::PlanetToOrchestrator;
+use common_game::protocols::planet_explorer::ExplorerToPlanet;
+use common_game::protocols::planet_explorer::PlanetToExplorer;
 use std::thread;
 use trip::trip;
 
@@ -95,7 +95,7 @@ fn test_planet_supported_resource_resp() {
         .orch_tx
         .send(IncomingExplorerRequest {
             explorer_id: 0,
-            new_mpsc_sender: expl_tx,
+            new_sender: expl_tx,
         })
         .expect("Failed to send sunray message");
 
@@ -124,7 +124,7 @@ fn test_planet_supported_combination_resp() {
         .orch_tx
         .send(IncomingExplorerRequest {
             explorer_id: 0,
-            new_mpsc_sender: expl_tx,
+            new_sender: expl_tx,
         })
         .expect("Failed to send sunray message");
 
@@ -153,7 +153,7 @@ fn test_planet_available_eng_cell_resp() {
         .orch_tx
         .send(IncomingExplorerRequest {
             explorer_id: 0,
-            new_mpsc_sender: expl_tx,
+            new_sender: expl_tx,
         })
         .expect("Failed to send sunray message");
 
@@ -352,7 +352,7 @@ fn test_planet_incoming_expl_resp() {
         .orch_tx
         .send(OrchestratorToPlanet::IncomingExplorerRequest {
             explorer_id: 0,
-            new_mpsc_sender: expl_tx,
+            new_sender: expl_tx,
         })
         .expect("Failed to send asteroid message");
 
@@ -380,6 +380,7 @@ fn test_planet_outgoing_expl_resp() {
         PlanetToOrchestrator::OutgoingExplorerResponse {
             planet_id: 0,
             res: Ok(()),
+            ..
         } => {}
         _other => panic!("Wrong response received"),
     }

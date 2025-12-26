@@ -219,10 +219,25 @@ impl PlanetAI for AI {
         info!("planet_id={} ai_stopped", state.id());
     }
 
+    /// Handles a sunray by delegating to the internal charging logic.
+    ///
+    /// # Behavior
+    /// - Consumes the incoming sunray to charge the first available energy cell.
+    /// - Attempts to build a rocket immediately after charging.
+    /// - This is a wrapper around the static [`AI::handle_sunray`] method.
+
     fn handle_sunray(&mut self, state: &mut PlanetState, _: &Generator, _: &Combinator, s: Sunray) {
         AI::handle_sunray(state, s);
     }
 
+    /// Provides a `DummyPlanetState` object representing the current planet state.
+    ///
+    /// # Behavior
+    /// - Converts the current `PlanetState` into a `DummyPlanetState`.
+    ///
+    ///
+    /// # Returns
+    /// A `DummyPlanetState` representing the current state of the planet.
     fn handle_internal_state_req(
         &mut self,
         state: &mut PlanetState,

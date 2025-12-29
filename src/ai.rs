@@ -227,14 +227,15 @@ impl PlanetAI for AI {
     /// - This is a wrapper around the static [`AI::handle_sunray`] method.
 
     fn handle_sunray(&mut self, state: &mut PlanetState, _: &Generator, _: &Combinator, s: Sunray) {
-        AI::handle_sunray(state, s);
+        if self.is_running(state.id()) {
+            AI::handle_sunray(state, s);
+        }
     }
 
     /// Provides a `DummyPlanetState` object representing the current planet state.
     ///
     /// # Behavior
     /// - Converts the current `PlanetState` into a `DummyPlanetState`.
-    ///
     ///
     /// # Returns
     /// A `DummyPlanetState` representing the current state of the planet.

@@ -225,7 +225,6 @@ impl PlanetAI for AI {
     /// - Consumes the incoming sunray to charge the first available energy cell.
     /// - Attempts to build a rocket immediately after charging.
     /// - This is a wrapper around the static [`AI::handle_sunray`] method.
-
     fn handle_sunray(&mut self, state: &mut PlanetState, _: &Generator, _: &Combinator, s: Sunray) {
         if self.is_running(state.id()) {
             AI::handle_sunray(state, s);

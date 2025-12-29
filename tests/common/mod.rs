@@ -1,6 +1,6 @@
-use common_game::protocols::messages::ExplorerToPlanet;
-use common_game::protocols::messages::OrchestratorToPlanet;
-use common_game::protocols::messages::PlanetToOrchestrator;
+use common_game::protocols::orchestrator_planet::OrchestratorToPlanet;
+use common_game::protocols::orchestrator_planet::PlanetToOrchestrator;
+use common_game::protocols::planet_explorer::ExplorerToPlanet;
 use std::thread;
 use std::time::Duration;
 use trip::trip;

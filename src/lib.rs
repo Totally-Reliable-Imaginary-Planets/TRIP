@@ -37,10 +37,8 @@ use crate::ai::AI;
 ///
 /// # Examples
 ///
-/// ```ignore
 /// let planet = trip(id, orch_rx, planet_tx, expl_rx)?;
 /// spawn_planet_thread(planet);
-/// ```
 ///
 /// # See Also
 /// - [`Planet::new`]

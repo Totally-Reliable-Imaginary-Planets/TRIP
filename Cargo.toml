@@ -4,7 +4,7 @@ version = "0.4.0"
 edition = "2024"
 
 [dependencies]
-common-game = { git = "ssh://git@uni.github.com/unitn-ap-2025/common.git", branch = "main"}
+common-game = "2.0.0"
 crossbeam-channel = "0.5.15"
 log = "0.4.29"
 

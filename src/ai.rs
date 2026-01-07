@@ -75,6 +75,7 @@
 //! - [`PlanetAI` trait](common_game::components::planet::PlanetAI)
 
 use common_game::components::energy_cell::EnergyCell;
+use common_game::components::planet::DummyPlanetState;
 use common_game::components::planet::{PlanetAI, PlanetState};
 use common_game::components::resource::ComplexResourceRequest;
 use common_game::components::resource::{
@@ -82,11 +83,7 @@ use common_game::components::resource::{
 };
 use common_game::components::rocket::Rocket;
 use common_game::components::sunray::Sunray;
-use common_game::protocols::messages::PlanetToOrchestrator::InternalStateResponse;
-use common_game::protocols::messages::PlanetToOrchestrator::SunrayAck;
-use common_game::protocols::messages::{
-    ExplorerToPlanet, OrchestratorToPlanet, PlanetToExplorer, PlanetToOrchestrator,
-};
+use common_game::protocols::planet_explorer::{ExplorerToPlanet, PlanetToExplorer};
 use log::{debug, error, info, warn};
 
 /// AI implementation for our planet.
@@ -187,7 +184,7 @@ impl AI {
             debug!("planet_id={} sunray: charging cell", state.id());
             match state.build_rocket(index) {
                 Ok(()) => info!("planet_id={} rocket_built", state.id()),
-                Err(e) => error!("planet_id={} rocket_build_failed: {}", state.id(), e),
+                Err(e) => warn!("planet_id={} rocket_build_failed: {}", state.id(), e),
             }
         } else {
             warn!("planet_id={} sunray: no_uncharged_cells", state.id());
@@ -205,7 +202,7 @@ impl PlanetAI for AI {
     /// # Side Effects
     /// - Sets `running = true`
     /// - Logs an informational `ai_started` message
-    fn start(&mut self, state: &PlanetState) {
+    fn on_start(&mut self, state: &PlanetState, _: &Generator, _: &Combinator) {
         self.running = true;
         info!("planet_id={} ai_started", state.id());
     }
@@ -217,71 +214,37 @@ impl PlanetAI for AI {
     /// # Side Effects
     /// - Sets `running = false`
     /// - Logs an informational `ai_stopped` message
-    fn stop(&mut self, state: &PlanetState) {
+    fn on_stop(&mut self, state: &PlanetState, _: &Generator, _: &Combinator) {
         self.running = false;
         info!("planet_id={} ai_stopped", state.id());
     }
 
-    /// Handles messages sent by the orchestrator to this planet.
+    /// Handles a sunray by delegating to the internal charging logic.
     ///
-    /// This is the primary entry point for orchestrator-driven behavior such as:
-    /// - Charging energy cells via sunrays
-    /// - Rocket construction
-    /// - Internal state inspection
+    /// # Behavior
+    /// - Consumes the incoming sunray to charge the first available energy cell.
+    /// - Attempts to build a rocket immediately after charging.
+    /// - This is a wrapper around the static [`AI::handle_sunray`] method.
+    fn handle_sunray(&mut self, state: &mut PlanetState, _: &Generator, _: &Combinator, s: Sunray) {
+        if self.is_running(state.id()) {
+            AI::handle_sunray(state, s);
+        }
+    }
+
+    /// Provides a `DummyPlanetState` object representing the current planet state.
     ///
-    /// # Processing Rules
-    ///
-    /// - If the AI is stopped, returns `None` immediately.
-    ///
-    /// ## Supported:
-    /// - [`OrchestratorToPlanet::Sunray`]:
-    ///     - Charges one cell and attempts rocket construction.
-    ///     - Returns [`PlanetToOrchestrator::SunrayAck`].
-    ///
-    /// - [`OrchestratorToPlanet::InternalStateRequest`]:
-    ///     - Returns a snapshot of the planet's public state.
-    ///
-    /// ## Ignored (return `None`), handled externally by the runtime:
-    /// - [`Asteroid`]
-    /// - [`StartPlanetAI`] and [`StopPlanetAI`]
-    /// - [`IncomingExplorerRequest`], [`OutgoingExplorerRequest`]
-    /// - [`KillPlanet`]
+    /// # Behavior
+    /// - Converts the current `PlanetState` into a `DummyPlanetState`.
     ///
     /// # Returns
-    /// - `Some(response)` if a response is produced.
-    /// - `None` if the AI is stopped or the message is ignored.
-    fn handle_orchestrator_msg(
+    /// A `DummyPlanetState` representing the current state of the planet.
+    fn handle_internal_state_req(
         &mut self,
         state: &mut PlanetState,
         _: &Generator,
         _: &Combinator,
-        msg: OrchestratorToPlanet,
-    ) -> Option<PlanetToOrchestrator> {
-        if !self.is_running(state.id()) {
-            return None;
-        }
-        match msg {
-            OrchestratorToPlanet::Sunray(s) => {
-                AI::handle_sunray(state, s);
-                Some(SunrayAck {
-                    planet_id: state.id(),
-                })
-            }
-            OrchestratorToPlanet::InternalStateRequest => {
-                info!("planet_id={} outgoing_internal_state_response", state.id());
-
-                Some(InternalStateResponse {
-                    planet_id: state.id(),
-                    planet_state: state.to_dummy(),
-                })
-            }
-            OrchestratorToPlanet::KillPlanet
-            | OrchestratorToPlanet::OutgoingExplorerRequest { .. }
-            | OrchestratorToPlanet::IncomingExplorerRequest { .. }
-            | OrchestratorToPlanet::Asteroid(_)
-            | OrchestratorToPlanet::StartPlanetAI
-            | OrchestratorToPlanet::StopPlanetAI => None,
-        }
+    ) -> DummyPlanetState {
+        state.to_dummy()
     }
 
     /// Handles messages from an explorer interacting with this planet.

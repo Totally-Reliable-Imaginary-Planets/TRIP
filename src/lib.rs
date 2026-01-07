@@ -1,8 +1,7 @@
 use common_game::components::planet::{Planet, PlanetType};
 use common_game::components::resource::BasicResourceType;
-use common_game::protocols::messages::{
-    ExplorerToPlanet, OrchestratorToPlanet, PlanetToOrchestrator,
-};
+use common_game::protocols::orchestrator_planet::{OrchestratorToPlanet, PlanetToOrchestrator};
+use common_game::protocols::planet_explorer::ExplorerToPlanet;
 use log::{debug, error, info};
 
 mod ai;
@@ -38,10 +37,8 @@ use crate::ai::AI;
 ///
 /// # Examples
 ///
-/// ```ignore
 /// let planet = trip(id, orch_rx, planet_tx, expl_rx)?;
 /// spawn_planet_thread(planet);
-/// ```
 ///
 /// # See Also
 /// - [`Planet::new`]

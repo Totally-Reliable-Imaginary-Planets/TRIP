@@ -1,1 +1,81 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `ai` mod in crate `trip`."><title>trip::ai - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="trip" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../trip/index.html">trip</a><span class="version">0.4.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module ai</a></h2><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate trip</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">trip</a></div><h1>Module <span>ai</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/trip/ai.rs.html#1-313">Source</a> </span></div><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.AI.html" title="struct trip::ai::AI">AI</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>The AI implementation for our planet</dd></dl></section></div></main></body></html>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="AI logic for our Planet implementation."><title>trip::ai - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="trip" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../trip/index.html">trip</a><span class="version">0.5.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module ai</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#overview" title="Overview">Overview</a></li><li><a href="#ai-runtime-model" title="AI Runtime Model">AI Runtime Model</a></li><li><a href="#supported-features" title="Supported Features">Supported Features</a></li><li><a href="#unsupported-features-as-of-current-version" title="Unsupported Features (as of current version)">Unsupported Features (as of current version)</a></li><li><a href="#thread-safety-and-side-effects" title="Thread Safety and Side Effects">Thread Safety and Side Effects</a></li><li><a href="#protocol-guarantees" title="Protocol Guarantees">Protocol Guarantees</a></li><li><a href="#see-also" title="See Also">See Also</a></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate trip</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">trip</a></div><h1>Module <span>ai</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/trip/ai.rs.html#1-503">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>AI logic for our Planet implementation.</p>
+<p>This module defines the <a href="struct.AI.html" title="struct trip::ai::AI"><code>AI</code></a> struct, which implements the <a href="../../common_game/components/planet/trait.PlanetAI.html" title="trait common_game::components::planet::PlanetAI"><code>PlanetAI</code></a>
+trait from <code>common_game</code>. The AI controls how our planet reacts to
+orchestrator messages, explorer requests, and asteroid events.</p>
+<h2 id="overview"><a class="doc-anchor" href="#overview">§</a>Overview</h2>
+<p>The AI manages three major responsibilities:</p>
+<ol>
+<li><strong>Lifecycle control</strong> via <code>start()</code> and <code>stop()</code>.
+<ul>
+<li>When stopped, the AI rejects all messages and produces no output.</li>
+</ul>
+</li>
+<li><strong>Message handling</strong>
+<ul>
+<li>[<code>handle_orchestrator_msg</code>] processes messages from the orchestrator,
+including sunrays, internal state requests, and others.</li>
+<li>[<code>handle_explorer_msg</code>] processes queries and requests from explorers
+related to energy, basic resources, supported combinations, and complex
+combinations.</li>
+</ul>
+</li>
+<li><strong>Asteroid response logic</strong>
+<ul>
+<li>[<code>handle_asteroid</code>] launches an existing rocket or attempts to build
+and launch a new one.</li>
+</ul>
+</li>
+</ol>
+<h2 id="ai-runtime-model"><a class="doc-anchor" href="#ai-runtime-model">§</a>AI Runtime Model</h2>
+<p>The AI maintains an internal <code>running: bool</code> flag.</p>
+<ul>
+<li>When <code>running == false</code>, the planet is considered inactive and <strong>all
+incoming messages are ignored</strong>.</li>
+<li>The orchestrator controls this state via <code>StartPlanetAI</code> and
+<code>StopPlanetAI</code> messages.</li>
+</ul>
+<p>The planet never blocks inside the AI; blocking occurs only in the
+outer planet loop that receives messages from channels.</p>
+<h2 id="supported-features"><a class="doc-anchor" href="#supported-features">§</a>Supported Features</h2>
+<p>The AI supports:</p>
+<ul>
+<li><strong>Sunray absorption and energy cell charging</strong></li>
+<li><strong>Rocket construction via charged cells</strong></li>
+<li><strong>Internal state reporting</strong></li>
+<li><strong>Basic resource handling for Oxygen</strong></li>
+<li><strong>Fallback error reporting for unsupported combinations</strong></li>
+<li><strong>Asteroid-triggered rocket launching</strong></li>
+</ul>
+<h2 id="unsupported-features-as-of-current-version"><a class="doc-anchor" href="#unsupported-features-as-of-current-version">§</a>Unsupported Features (as of current version)</h2>
+<p>The following message types are acknowledged but <strong>not implemented</strong> and
+return <code>None</code> (or panic if explicitly marked with <code>todo!()</code> in the code):</p>
+<ul>
+<li>Incoming and outgoing explorer routing requests</li>
+<li>Complex resource generation beyond the Oxygen path</li>
+<li>Planet kill event (currently ignored; real implementation should finalize
+the planet’s lifecycle)</li>
+</ul>
+<h2 id="thread-safety-and-side-effects"><a class="doc-anchor" href="#thread-safety-and-side-effects">§</a>Thread Safety and Side Effects</h2>
+<ul>
+<li>The AI mutates <a href="../../common_game/components/planet/struct.PlanetState.html" title="struct common_game::components::planet::PlanetState"><code>PlanetState</code></a> extensively (charging cells, building and
+launching rockets, creating resources).</li>
+<li>Logging is performed using the <code>log</code> crate.</li>
+<li>No global state is modified, and the struct is <code>Send</code> + <code>Sync</code> via its
+field structure.</li>
+</ul>
+<h2 id="protocol-guarantees"><a class="doc-anchor" href="#protocol-guarantees">§</a>Protocol Guarantees</h2>
+<p>This implementation respects the project protocol by:</p>
+<ul>
+<li>Never reading from channels directly.</li>
+<li>Producing a response only when required.</li>
+<li>Logging all relevant state transitions.</li>
+<li>Maintaining deterministic behavior (no randomness here).</li>
+</ul>
+<h2 id="see-also"><a class="doc-anchor" href="#see-also">§</a>See Also</h2>
+<ul>
+<li><a href="../../common_game/components/planet/struct.PlanetState.html" title="struct common_game::components::planet::PlanetState"><code>PlanetState</code></a></li>
+<li><a href="../../common_game/components/resource/struct.Generator.html" title="struct common_game::components::resource::Generator"><code>Generator</code></a></li>
+<li><a href="../../common_game/components/resource/struct.Combinator.html" title="struct common_game::components::resource::Combinator"><code>Combinator</code></a></li>
+<li><a href="../../common_game/components/planet/trait.PlanetAI.html" title="trait common_game::components::planet::PlanetAI"><code>PlanetAI</code> trait</a></li>
+</ul>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.AI.html" title="struct trip::ai::AI">AI</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>AI implementation for our planet.</dd></dl></section></div></main></body></html>

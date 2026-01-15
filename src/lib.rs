@@ -34,14 +34,6 @@ use crate::ai::AI;
 ///
 /// - `Err(String)` if [`Planet::new`] fails due to invalid parameters.
 ///
-///
-/// # Examples
-///
-///```
-/// let planet = trip(id, orch_rx, planet_tx, expl_rx)?;
-/// spawn_planet_thread(planet);
-///```
-///
 /// # See Also
 /// - [`Planet::new`]
 /// - [`AI`]

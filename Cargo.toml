@@ -1,10 +1,10 @@
 [package]
 name = "trip"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2024"
 
 [dependencies]
-common-game = "2.0.0"
+common-game = "3.0.0"
 crossbeam-channel = "0.5.15"
 log = "0.4.29"
 

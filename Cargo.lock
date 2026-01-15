@@ -311,7 +311,7 @@ dependencies = [
 
 [[package]]
 name = "trip"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "common-game",
  "crossbeam-channel",

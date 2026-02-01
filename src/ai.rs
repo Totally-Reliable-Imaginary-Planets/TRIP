@@ -312,7 +312,9 @@ impl PlanetAI for AI {
                         state.id(),
                         explorer_id
                     );
-                    None
+                    PlanetToExplorer::GenerateResourceResponse {
+                        resource: None,
+                    }
                 }),
             ExplorerToPlanet::GenerateResourceRequest { explorer_id, .. } => {
                 debug!(

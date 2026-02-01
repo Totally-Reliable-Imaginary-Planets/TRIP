@@ -312,9 +312,7 @@ impl PlanetAI for AI {
                         state.id(),
                         explorer_id
                     );
-                    PlanetToExplorer::GenerateResourceResponse {
-                        resource: None,
-                    }
+                    Some(PlanetToExplorer::GenerateResourceResponse { resource: None })
                 }),
             ExplorerToPlanet::GenerateResourceRequest { explorer_id, .. } => {
                 debug!(
@@ -322,7 +320,7 @@ impl PlanetAI for AI {
                     state.id(),
                     explorer_id
                 );
-                None
+                Some(PlanetToExplorer::GenerateResourceResponse { resource: None })
             }
             ExplorerToPlanet::SupportedCombinationRequest { explorer_id, .. } => {
                 debug!(
